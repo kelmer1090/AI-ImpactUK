@@ -1,0 +1,17 @@
+# backend/rules.yaml
+rules:
+  - id: R001
+    clause: ICO‑Audit §3.2   # free‑text label
+    severity: red
+    trigger:
+      data_types: ["Biometric"]
+    reason: "Biometric data requires a DPIA under UK GDPR Art 35."
+    mitigation: "Conduct a Data‑Protection‑Impact Assessment before further processing."
+
+  - id: R002
+    clause: DSIT Principle 5
+    severity: amber
+    trigger:
+      model_type: ["Classification"]
+    reason: "Provide fairness metrics for classification models."
+    mitigation: "Add equal‑opportunity & TPR/FPR disaggregated reports."
