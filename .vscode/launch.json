@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Full‑stack Dev",
+      "configurations": ["Next.js", "FastAPI"]
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Next.js",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend/approuter",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 9229,
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "FastAPI",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "cwd": "${workspaceFolder}/backend",
+      "args": ["main:app", "--reload", "--port", "8000"],
+      "envFile": "${workspaceFolder}/backend/.env",
+      "justMyCode": true
+    }
+  ]
+}
