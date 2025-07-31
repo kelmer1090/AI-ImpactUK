@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Project = {
   id: number;
@@ -29,22 +30,30 @@ export default function ProjectsPage() {
       <h1 className="text-2xl font-bold mb-4">Project History</h1>
       {loading && <div>Loading...</div>}
       {error && <div className="text-red-500">{error}</div>}
+      {!loading && projects.length === 0 && (
+        <div className="text-gray-400">No projects found.</div>
+      )}
       <ul>
         {projects.map((p) => (
           <li
             key={p.id}
-            className="mb-4 p-4 rounded-xl shadow bg-white dark:bg-gray-800"
+            className="mb-4 p-4 rounded-xl shadow bg-white dark:bg-gray-800 hover:ring-2 hover:ring-blue-400 transition"
           >
-            <div className="font-semibold">{p.title}</div>
-            <div className="text-gray-500 text-sm">{p.created_at}</div>
-            <div className="mt-2">{p.description}</div>
-            {/* View details button for next step */}
-            <button
-              className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
-              onClick={() => window.location.href = `/projects/${p.id}`}
-            >
-              View Details
-            </button>
+            <Link href={`/projects/${p.id}`}>
+              <div className="cursor-pointer">
+                <div className="font-semibold">{p.title}</div>
+                <div className="text-gray-500 text-sm">{p.created_at}</div>
+                <div className="mt-2">{p.description}</div>
+                <button
+                  className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
+                  tabIndex={-1}
+                  type="button"
+                  // No onClick—let Link handle navigation
+                >
+                  View Details
+                </button>
+              </div>
+            </Link>
           </li>
         ))}
       </ul>
