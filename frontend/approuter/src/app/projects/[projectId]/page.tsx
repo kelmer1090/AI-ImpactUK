@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { PolicyPopover } from "@/app/components/PolicyPopover";
+import { policyMap } from "@/app/lib/policyMap";
 
 type Flag = {
   id: string;
@@ -99,7 +101,10 @@ export default function ProjectDetailsPage() {
                       <span className="font-normal"> — {flag.reason}</span>
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-300">
-                      Clause: {flag.clause}
+                      Clause:&nbsp;
+                      {flag.clause && policyMap[flag.clause]
+                        ? <PolicyPopover {...policyMap[flag.clause]} />
+                        : <span>{flag.clause}</span>}
                     </div>
                     {flag.mitigation && (
                       <div className="text-xs text-green-700 dark:text-green-400 mt-1">

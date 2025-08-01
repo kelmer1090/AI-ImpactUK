@@ -1,0 +1,414 @@
+[
+  {
+    "section": "Project Framing",
+    "stepLabel": "Project Narrative",
+    "questions": [
+      {
+        "id": "project_title",
+        "type": "text",
+        "label": "Project Name",
+        "required": true,
+        "helperText": "Enter a clear, concise name for your AI project."
+      },
+      {
+        "id": "P1",
+        "type": "textarea",
+        "label": "Describe the AI system’s purpose and primary decision/output.",
+        "required": true,
+        "helperText": "Include details about its purpose, who will use it, what data it processes, where it will be deployed, and any safeguards already in place.",
+        "minLength": 150
+      },
+      {
+        "id": "P2",
+        "type": "select",
+        "label": "Which sector best describes your use-case?",
+        "options": [
+          "Health",
+          "Finance",
+          "HR",
+          "Critical Infrastructure",
+          "Consumer",
+          "Other"
+        ],
+        "required": true
+      },
+      {
+        "id": "P3",
+        "type": "radio",
+        "label": "Does the system perform an automated decision with legal or similarly significant effect on individuals?",
+        "options": ["Yes", "No"],
+        "required": true
+      },
+      {
+        "id": "P4",
+        "type": "select",
+        "label": "Lifecycle stage",
+        "options": ["Concept", "Prototype", "Pilot", "Production", "Retired"],
+        "required": true
+      },
+      {
+        "id": "P5",
+        "type": "select",
+        "label": "Primary model family",
+        "options": ["LLM", "CV", "Tabular ML", "RL", "Other"],
+        "required": true
+      }
+    ]
+  },
+
+  {
+    "section": "Technical",
+    "stepLabel": "Technical",
+    "subsections": [
+      {
+        "title": "Accuracy",
+        "questions": [
+          {
+            "id": "T1",
+            "type": "textarea",
+            "label": "What performance metric(s) do you use and why are they suitable?",
+            "helperText": "e.g., F1, BLEU, MAE",
+            "required": true
+          },
+          {
+            "id": "T2",
+            "type": "number",
+            "label": "Provide the latest validation score(s).",
+            "required": false
+          },
+          {
+            "id": "T3",
+            "type": "radio",
+            "label": "Domain-minimum threshold met?",
+            "options": ["Yes", "No"],
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Reliability",
+        "questions": [
+          {
+            "id": "T4",
+            "type": "textarea",
+            "label": "How is model drift detected in production?",
+            "required": true
+          },
+          {
+            "id": "T5",
+            "type": "select",
+            "label": "Retraining cadence",
+            "options": ["Weekly", "Monthly", "On-demand", "N/A"],
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Robustness",
+        "questions": [
+          {
+            "id": "T6",
+            "type": "textarea",
+            "label": "List any stress-tests or adversarial evaluations performed (e.g., perturbation, jailbreak tests).",
+            "required": false
+          },
+          {
+            "id": "T7",
+            "type": "radio",
+            "label": "Robustness score > baseline?",
+            "options": ["Yes", "No"],
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Security",
+        "questions": [
+          {
+            "id": "T8",
+            "type": "radio",
+            "label": "Has the system undergone penetration or red-team testing?",
+            "options": ["Yes", "No"],
+            "required": false
+          },
+          {
+            "id": "T9",
+            "type": "textarea",
+            "label": "Describe the most severe vulnerability found and its fix.",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Resilience",
+        "questions": [
+          {
+            "id": "T10",
+            "type": "textarea",
+            "label": "Describe fallback or “safe-mode” behaviour when the model is uncertain or offline.",
+            "required": false
+          },
+          {
+            "id": "T11",
+            "type": "number",
+            "label": "Mean time to recovery (MTTR) target (hours)",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    "section": "Socio-Technical",
+    "stepLabel": "Socio-Technical",
+    "subsections": [
+      {
+        "title": "Explainability",
+        "questions": [
+          {
+            "id": "S12",
+            "type": "multiselect",
+            "label": "How are explanations surfaced to each stakeholder group (user, regulator, internal audit)?",
+            "options": [
+              "Inline text",
+              "PDF report",
+              "UI tooltip",
+              "API",
+              "None"
+            ],
+            "required": false
+          },
+          {
+            "id": "S13",
+            "type": "text",
+            "label": "Explainability tooling used (e.g., SHAP, LIME, custom)",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Interpretability",
+        "questions": [
+          {
+            "id": "S14",
+            "type": "likert",
+            "label": "Rate overall interpretability",
+            "scale": [1, 2, 3, 4, 5],
+            "required": false
+          },
+          {
+            "id": "S15",
+            "type": "textarea",
+            "label": "Key features driving predictions (top 5)",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Privacy",
+        "questions": [
+          {
+            "id": "S16",
+            "type": "radio",
+            "label": "Does the system process personal data?",
+            "options": ["Yes", "No"],
+            "required": true
+          },
+          {
+            "id": "S16a",
+            "type": "checklist",
+            "label": "If yes: List data categories (special-category vs. normal)",
+            "options": ["Special-category", "Normal"],
+            "required": false,
+            "dependsOn": "S16",
+            "showIfValue": "Yes"
+          },
+          {
+            "id": "S17",
+            "type": "multiselect",
+            "label": "Techniques applied",
+            "options": [
+              "Pseudonymisation",
+              "Differential privacy",
+              "Fed-learning",
+              "None"
+            ],
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Safety",
+        "questions": [
+          {
+            "id": "S18",
+            "type": "textarea",
+            "label": "Enumerate credible harms if the system malfunctions (physical, economic, psychological)",
+            "required": false
+          },
+          {
+            "id": "S19",
+            "type": "checklist",
+            "label": "Safety mitigations in place",
+            "options": [
+              "Human-in-the-loop",
+              "Kill-switch",
+              "Rate-limits",
+              "Other"
+            ],
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Managing Bias",
+        "questions": [
+          {
+            "id": "S20",
+            "type": "file",
+            "label": "Provide demographic breakdown of training data (if collected).",
+            "required": false
+          },
+          {
+            "id": "S21",
+            "type": "select",
+            "label": "Bias tests run & metrics",
+            "options": [
+              "Demographic parity",
+              "Equal opportunity",
+              "Calibration",
+              "None"
+            ],
+            "required": false
+          },
+          {
+            "id": "S22",
+            "type": "radio",
+            "label": "Bias status",
+            "options": [
+              "Passed",
+              "Needs work",
+              "Not yet tested"
+            ],
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    "section": "Guiding Principles",
+    "stepLabel": "Guiding Principles",
+    "subsections": [
+      {
+        "title": "Fairness",
+        "questions": [
+          {
+            "id": "G23",
+            "type": "multiselect",
+            "label": "Which fairness definition aligns with your product goal?",
+            "options": [
+              "Group",
+              "Individual",
+              "Counterfactual",
+              "Other"
+            ],
+            "required": false
+          },
+          {
+            "id": "G24",
+            "type": "textarea",
+            "label": "Stakeholder groups consulted about fairness expectations",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Accountability",
+        "questions": [
+          {
+            "id": "G25",
+            "type": "text",
+            "label": "Named accountable owner (role, email)",
+            "required": false
+          },
+          {
+            "id": "G26",
+            "type": "textarea",
+            "label": "Escalation route for external complaints",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Transparency",
+        "questions": [
+          {
+            "id": "G27",
+            "type": "radio",
+            "label": "Will model cards or system cards be published?",
+            "options": ["Yes", "No"],
+            "required": false
+          },
+          {
+            "id": "G28",
+            "type": "multiselect",
+            "label": "Documentation consumers",
+            "options": [
+              "Public",
+              "Customers",
+              "Regulators",
+              "Internal only"
+            ],
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    "section": "Plus Topics",
+    "stepLabel": "“Plus” Topics",
+    "subsections": [
+      {
+        "title": "Data Governance",
+        "questions": [
+          {
+            "id": "P29",
+            "type": "file",
+            "label": "Attach or link data-lineage documentation / data-flow diagram.",
+            "required": false
+          },
+          {
+            "id": "P30",
+            "type": "radio",
+            "label": "Data retention period defined?",
+            "options": ["Yes", "No"],
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Diversity & Inclusion",
+        "questions": [
+          {
+            "id": "P31",
+            "type": "textarea",
+            "label": "Describe steps taken to ensure dataset and team diversity.",
+            "required": false
+          },
+          {
+            "id": "P32",
+            "type": "radio",
+            "label": "Inclusion reviews conducted with affected communities?",
+            "options": ["Yes", "No"],
+            "required": false
+          }
+        ]
+      }
+    ]
+  }
+]
