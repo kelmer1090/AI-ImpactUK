@@ -1,17 +1,131 @@
 # backend/rules.yaml
 rules:
-  - id: R001
-    clause: ICO‑Audit §3.2   # free‑text label
-    severity: red
+  - id: description-too-short
+    clause: "Clause 1.1"
+    severity: "red"
+    reason: "Project narrative is too short; insufficient information to evaluate risk properly."
+    mitigation: "Provide a fuller description including purpose, data processed, deployment context, and safeguards."
     trigger:
-      data_types: ["Biometric"]
-    reason: "Biometric data requires a DPIA under UK GDPR Art 35."
-    mitigation: "Conduct a Data‑Protection‑Impact Assessment before further processing."
+      description_min_length: 150  # custom logic: length of P1
 
-  - id: R002
-    clause: DSIT Principle 5
-    severity: amber
+  - id: missing-project-title
+    clause: "Clause 1.2"
+    severity: "amber"
+    reason: "Project name is missing."
+    mitigation: "Give the project a concise, descriptive title."
     trigger:
-      model_type: ["Classification"]
-    reason: "Provide fairness metrics for classification models."
-    mitigation: "Add equal‑opportunity & TPR/FPR disaggregated reports."
+      title_missing: true
+
+  - id: uses-classification-model
+    clause: "Clause 2.3"
+    severity: "amber"
+    reason: "Classification models can have significant impact on individuals, especially if used for decisions."
+    mitigation: "Ensure fairness and explainability assessments are in place."
+    trigger:
+      model_type: ["Tabular ML", "Classification"]  # adapt if you normalize naming
+
+  - id: uses-llm-foundation-model
+    clause: "Clause 2.5"
+    severity: "amber"
+    reason: "Large language / foundation models can amplify hallucination and downstream risk."
+    mitigation: "Apply prompt monitoring, output validation, and guardrails."
+    trigger:
+      model_type: ["LLM"]
+
+  - id: no-data-types-specified
+    clause: "Clause 3.2"
+    severity: "green"
+    reason: "No sector/data types declared; defaulting to minimal data footprint."
+    mitigation: null
+    trigger:
+      data_types: []  # match when empty
+
+  - id: processes-special-category-data
+    clause: "Clause 4.1"
+    severity: "red"
+    reason: "System processes special-category personal data which carries higher legal sensitivity."
+    mitigation: "Ensure lawful basis, explicit consent where required, and extra safeguards (e.g., minimisation, access controls)."
+    trigger:
+      special_category_data: true  # custom: derived from S16a includes "Special-category"
+
+  - id: privacy-techniques-missing
+    clause: "Clause 4.2"
+    severity: "amber"
+    reason: "Personal data is processed but privacy-preserving techniques are not applied."
+    mitigation: "Consider applying pseudonymisation, differential privacy or federated learning."
+    trigger:
+      processes_personal_data: true  # from S16 == "Yes"
+      privacy_techniques: []        # from S17 missing or contains "None"
+
+  - id: explainability-tooling-missing
+    clause: "Clause 5.1"
+    severity: "amber"
+    reason: "No explainability tooling specified."
+    mitigation: "Integrate established tools (e.g., SHAP, LIME) or document custom explanation logic."
+    trigger:
+      explainability_tooling_missing: true  # custom: S13 empty while impact context suggests explanation needed
+
+  - id: interpretability-unrated
+    clause: "Clause 5.2"
+    severity: "green"
+    reason: "Interpretability not explicitly rated."
+    mitigation: "Consider collecting a stakeholder rating to understand model transparency."
+    trigger:
+      interpretability_not_rated: true  # custom: S14 absent
+
+  - id: fairness-definition-missing
+    clause: "Clause 6.1"
+    severity: "amber"
+    reason: "No fairness definition selected; unclear what fairness means for this use-case."
+    mitigation: "Choose or define a fairness definition aligned to product goals (group, individual, counterfactual, etc.)."
+    trigger:
+      fairness_definition_missing: true  # custom: G23 empty
+
+  - id: no-accountable-owner
+    clause: "Clause 6.2"
+    severity: "amber"
+    reason: "No named accountable owner."
+    mitigation: "Assign and document a responsible owner for AI system outcomes."
+    trigger:
+      accountable_owner_missing: true  # custom: G25 empty
+
+  - id: model-cards-not-published
+    clause: "Clause 7.1"
+    severity: "amber"
+    reason: "Model/system card publication not planned."
+    mitigation: "Publish model cards or system cards to increase transparency to users and regulators."
+    trigger:
+      model_cards_published: false  # custom: G27 == "No"
+
+  - id: safety-mitigations-missing-despite-harm
+    clause: "Clause 8.1"
+    severity: "red"
+    reason: "Potential harms enumerated but no safety mitigations are in place."
+    mitigation: "Implement safety controls like human-in-the-loop, kill-switches, rate-limits, or other appropriate mechanisms."
+    trigger:
+      credible_harms_listed: true   # custom: S18 non-empty
+      safety_mitigations: []        # custom: S19 empty
+
+  - id: lack-of-drift-monitoring
+    clause: "Clause 9.1"
+    severity: "amber"
+    reason: "No strategy described for detecting model drift."
+    mitigation: "Establish monitoring to surface drift and trigger retraining or alerts."
+    trigger:
+      drift_detection_missing: true  # custom: T4 empty
+
+  - id: low-retraining-cadence
+    clause: "Clause 9.2"
+    severity: "green"
+    reason: "Retraining cadence is infrequent or unspecified."
+    mitigation: "Assess whether the retraining cadence matches the rate of distributional change."
+    trigger:
+      retraining_cadence: ["N/A", "On-demand"]  # caution: may need more nuanced logic
+
+  - id: no-penetration-testing
+    clause: "Clause 10.1"
+    severity: "amber"
+    reason: "No penetration or red-team testing reported."
+    mitigation: "Conduct security testing to uncover vulnerabilities before deployment."
+    trigger:
+      pen_test_missing: true  # custom: T8 == "No"
