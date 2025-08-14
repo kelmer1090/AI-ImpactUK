@@ -1,123 +1,71 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import toast from "react-hot-toast";
-import { PolicyPopover } from "@/app/components/PolicyPopover";
-import { policyMap } from "@/app/lib/policyMap";
+import Link from "next/link";
+import { prisma } from "../../../lib/prisma";
+import RagDonut from "../../components/RagDonut";
+import { PolicyPopover } from "../../components/PolicyPopover";
+import { policyMap } from "../../lib/policyMap";
 
-type Flag = {
-  id: string;
-  clause: string;
-  severity: string;
-  reason: string;
-  mitigation?: string;
-};
+export default async function ProjectDetailsPage(props: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await props.params;
+  const id = Number(projectId);
 
-type Assessment = {
-  id: number;
-  created_at: string;
-  flags: Flag[] | string; // Can be JSON string from DB
-  project_id: number;
-};
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: { assessments: { orderBy: { createdAt: "desc" } } },
+  });
 
-export default function ProjectDetailsPage() {
-  const { projectId } = useParams<{ projectId: string }>();
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  if (!project) return <main className="p-6">Project not found.</main>;
 
-  useEffect(() => {
-    if (!projectId) return;
-    setLoading(true);
-    setError("");
-    toast.dismiss(); // Dismiss previous toasts
-    fetch(`http://localhost:8000/projects/${projectId}/assessments/`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch assessments");
-        return res.json();
-      })
-      .then((data) => {
-        // Parse flags if they're stored as JSON strings in DB
-        const parsed = (data as Assessment[]).map((a) => ({
-          ...a,
-          flags:
-            typeof a.flags === "string"
-              ? (JSON.parse(a.flags) as Flag[])
-              : a.flags,
-        }));
-        setAssessments(parsed);
-        if (parsed.length === 0) toast("No assessments found.", { icon: "ℹ️" });
-      })
-      .catch((err) => {
-        setError("Failed to fetch assessments");
-        toast.error("Failed to fetch assessments");
-      })
-      .finally(() => setLoading(false));
-  }, [projectId]);
+  const latest = project.assessments[0];
+  const flags = (latest?.flags as any[]) ?? [];
+  const counts = {
+    red: flags.filter((f) => f.severity === "red").length,
+    amber: flags.filter((f) => f.severity === "amber").length,
+    green: flags.filter((f) => f.severity === "green").length,
+  };
 
   return (
-    <main className="max-w-2xl mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-4">
-        Assessments for Project <span className="text-blue-600">#{projectId}</span>
-      </h1>
-      {loading && (
-        <div className="mb-4">
-          <span className="animate-pulse text-gray-400">Loading...</span>
-        </div>
-      )}
-      {error && <div className="text-red-500 mb-4">{error}</div>}
-      {!loading && !error && assessments.length === 0 && (
-        <div className="text-gray-500">No assessments found for this project.</div>
-      )}
+    <main className="max-w-3xl mx-auto p-6 space-y-6">
+      <div className="flex items-baseline gap-2">
+        <h1 className="text-2xl font-semibold">{project.title}</h1>
+        <span className="text-sm text-gray-500">
+          {new Date(project.createdAt).toLocaleString()}
+        </span>
+        <Link href="/projects" className="text-sm underline ml-auto">
+          back to list
+        </Link>
+      </div>
 
-      <ul>
-        {assessments.map((a) => (
-          <li
-            key={a.id}
-            className="mb-4 p-4 rounded-xl shadow bg-white dark:bg-gray-800"
-          >
-            <div className="text-xs text-gray-500 mb-2">
-              Assessment date: {a.created_at}
-            </div>
-            <div>
-              <span className="font-semibold">Flags:</span>
-              <ul className="mt-2">
-                {(a.flags as Flag[]).length === 0 && (
-                  <li className="text-gray-500">No flags found.</li>
+      <p className="text-gray-700">{project.description}</p>
+
+      <div className="border rounded-2xl p-4 bg-white">
+        <RagDonut counts={counts} />
+      </div>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">Findings</h2>
+        {flags.length === 0 ? (
+          <p>No issues flagged.</p>
+        ) : (
+          <ul className="space-y-2">
+            {flags.map((flag: any, i: number) => (
+              <li key={i} className="border rounded-xl p-3 bg-white">
+                <div className="text-sm"><b>Severity:</b> {flag.severity}</div>
+                <div className="text-sm"><b>Reason:</b> {flag.reason}</div>
+                {flag.mitigation && (
+                  <div className="text-sm"><b>Mitigation:</b> {flag.mitigation}</div>
                 )}
-                {(a.flags as Flag[]).map((flag, i) => (
-                  <li
-                    key={i}
-                    className={`p-2 rounded my-1 ${
-                      flag.severity === "red"
-                        ? "bg-red-50 dark:bg-red-900/20"
-                        : flag.severity === "amber"
-                        ? "bg-yellow-50 dark:bg-yellow-900/20"
-                        : "bg-green-50 dark:bg-green-900/20"
-                    }`}
-                  >
-                    <div className="font-semibold capitalize">
-                      {flag.severity}
-                      <span className="font-normal"> — {flag.reason}</span>
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-300">
-                      Clause:&nbsp;
-                      {flag.clause && policyMap[flag.clause]
-                        ? <PolicyPopover {...policyMap[flag.clause]} />
-                        : <span>{flag.clause}</span>}
-                    </div>
-                    {flag.mitigation && (
-                      <div className="text-xs text-green-700 dark:text-green-400 mt-1">
-                        Mitigation: {flag.mitigation}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <div className="text-xs text-gray-500 mt-1">
+                  {flag.clause && policyMap[flag.clause]
+                    ? <PolicyPopover {...policyMap[flag.clause]} />
+                    : (flag.clause || "")}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

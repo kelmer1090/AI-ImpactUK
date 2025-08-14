@@ -1,34 +1,36 @@
-from pydantic import BaseModel, Field
+# backend/schemas.py
+from pydantic import BaseModel
 from typing import List, Optional
 
 class ProjectInput(BaseModel):
-    title: str = Field(..., example="AI Recruitment Filter")
-    description: str = Field(..., min_length=10, example="Analyzes CVs to shortlist candidates.")
-    data_types: List[str] = Field(..., example=["CVs", "Biometric"])
-    model_type: str = Field(..., example="Classification")
-    deployment_env: str = Field(..., example="Cloud SaaS")
-
-    # Extended fields driving flags
-    special_category_data: bool = Field(False, example=True)
-    processes_personal_data: bool = Field(True, example=True)
-    privacy_techniques: List[str] = Field([], example=["Pseudonymisation"])
-    explainability_tooling: Optional[str] = Field(None, example="SHAP")
-    interpretability_rating: Optional[str] = Field(None, example="High")
-    fairness_definition: Optional[str] = Field(None, example="Group")
-    accountable_owner: Optional[str] = Field(None, example="alice@example.com")
-    model_cards_published: bool = Field(False, example=True)
-    credible_harms: Optional[List[str]] = Field(None, example=["Incorrect denial of service causing financial loss"])
-    safety_mitigations: Optional[List[str]] = Field(None, example=["Human-in-the-loop"])
-    drift_detection: Optional[str] = Field(None, example="Statistical drift monitoring every 24h")
-    retraining_cadence: Optional[str] = Field(None, example="Weekly")
-    penetration_tested: bool = Field(False, example=True)
-
+    title: str
+    description: str
+    data_types: List[str] = []
+    model_type: Optional[str] = None
+    deployment_env: Optional[str] = None
+    # Privacy
+    processes_personal_data: Optional[bool] = None
+    special_category_data: Optional[bool] = None
+    privacy_techniques: Optional[List[str]] = None
+    # Explainability / Interpretability
+    explainability_tooling: Optional[str] = None
+    interpretability_rating: Optional[str] = None
+    # Fairness / Accountability / Transparency
+    fairness_definition: Optional[List[str]] = None
+    accountable_owner: Optional[str] = None
+    model_cards_published: Optional[bool] = None
+    # Safety & Ops
+    credible_harms: Optional[List[str]] = None
+    safety_mitigations: Optional[List[str]] = None
+    drift_detection: Optional[str] = None
+    retraining_cadence: Optional[str] = None
+    penetration_tested: Optional[bool] = None
 
 class Flag(BaseModel):
     id: str
-    clause: str
-    severity: str  # "red" | "amber" | "green"
-    reason: str
+    clause: str = ""
+    severity: str = "green"
+    reason: str = ""
     mitigation: Optional[str] = None
 
 class AnalysisOut(BaseModel):

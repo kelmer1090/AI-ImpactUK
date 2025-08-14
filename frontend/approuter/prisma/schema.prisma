@@ -1,0 +1,45 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  sessionId String?
+  userId    Int?
+
+  title                   String
+  description             String
+  data_types              String?
+  model_type              String?
+  deployment_env          String?
+  special_category_data   Boolean  @default(false)
+  processes_personal_data Boolean  @default(false)
+  privacy_techniques      String?
+  explainability_tooling  String?
+  interpretability_rating String?
+  drift_detection         String?
+  retraining_cadence      String?
+  penetration_tested      Boolean?
+
+  assessments Assessment[]
+
+  @@index([sessionId]) // index at model level
+  @@index([createdAt]) // optional but handy for sorting
+}
+
+model Assessment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  flags     Json
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId Int
+
+  @@index([projectId])
+  @@index([createdAt])
+}

@@ -1,48 +1,43 @@
+"use client";
+
 import React, { useState } from "react";
 
-type PolicyDetailProps = {
+export type PolicyDetailProps = {
   label: string;
-  text: string;
-  link: string;
+  text?: string;
+  link?: string;
+  category?: string;
   document?: string;
 };
 
-export function PolicyPopover({ label, text, link, document }: PolicyDetailProps) {
+export function PolicyPopover(props: PolicyDetailProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <span className="relative inline-block">
+    <span className="inline-flex items-center gap-2">
       <button
         type="button"
-        className="text-blue-600 underline underline-offset-2 hover:text-blue-800"
+        className="underline underline-offset-2"
         onClick={() => setOpen((v) => !v)}
       >
-        {label}
+        {props.label || "Policy"}
       </button>
       {open && (
-        <div
-          className="absolute z-50 bg-white dark:bg-gray-900 border rounded-xl p-4 shadow-lg w-80 mt-2"
-          style={{ left: 0 }}
-        >
-          <div className="font-semibold mb-2">{label}</div>
-          <div className="text-sm mb-2">{text}</div>
-          {document && (
-            <div className="text-xs text-gray-500 mb-2">Source: {document}</div>
+        <div className="z-10 max-w-md rounded-xl border p-3 bg-white shadow">
+          {props.text && <p className="text-sm mb-2">{props.text}</p>}
+          {props.document && (
+            <div className="text-xs text-gray-500">Source: {props.document}</div>
           )}
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline text-xs"
-          >
-            View policy section ↗
-          </a>
-          <button
-            className="absolute top-2 right-3 text-gray-400 hover:text-gray-600"
-            onClick={() => setOpen(false)}
-          >
-            ×
-          </button>
+          {props.link && (
+            <a
+              className="text-blue-600 text-xs underline"
+              href={props.link}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open reference
+            </a>
+          )}
         </div>
       )}
     </span>

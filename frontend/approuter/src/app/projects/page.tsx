@@ -1,62 +1,68 @@
-"use client";
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { prisma } from "../../lib/prisma";
+import { getSessionId } from "../../lib/session";
 
-type Project = {
-  id: number;
-  title: string;
-  description: string;
-  data_types: string;
-  model_type: string;
-  created_at: string;
-};
+export default async function ProjectsPage() {
+  const sessionId = await getSessionId();
 
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  let projects = sessionId
+    ? await prisma.project.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: "desc" },
+        include: { assessments: { orderBy: { createdAt: "desc" }, take: 1 } },
+      })
+    : [];
 
-  useEffect(() => {
-    setLoading(true);
-    fetch("http://localhost:8000/projects/")
-      .then((res) => res.json())
-      .then(setProjects)
-      .catch(() => setError("Failed to fetch projects"))
-      .finally(() => setLoading(false));
-  }, []);
+  // (Optional) fallback to recent projects so the page isn’t empty during dev
+  if (!projects.length) {
+    projects = await prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { assessments: { orderBy: { createdAt: "desc" }, take: 1 } },
+    });
+  }
+
+  const list = Array.isArray(projects) ? projects : [];
 
   return (
-    <div className="max-w-2xl mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-4">Project History</h1>
-      {loading && <div>Loading...</div>}
-      {error && <div className="text-red-500">{error}</div>}
-      {!loading && projects.length === 0 && (
-        <div className="text-gray-400">No projects found.</div>
+    <main className="max-w-3xl mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">My assessments</h1>
+      {list.length === 0 ? (
+        <p className="text-gray-500">No saved assessments yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {list.map((p) => {
+            const latest = p.assessments[0];
+            const flags = (latest?.flags as any[]) ?? [];
+            const red = flags.filter((f) => f.severity === "red").length;
+            const amber = flags.filter((f) => f.severity === "amber").length;
+            const green = flags.filter((f) => f.severity === "green").length;
+
+            return (
+              <li key={p.id} className="border rounded-xl p-4 bg-white">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="font-medium">{p.title}</h2>
+                    <p className="text-sm text-gray-500">
+                      {new Date(p.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-sm">
+                    <span className="mr-3">🔴 {red}</span>
+                    <span className="mr-3">🟠 {amber}</span>
+                    <span>🟢 {green}</span>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <Link className="underline" href={`/projects/${p.id}`}>
+                    Open
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <ul>
-        {projects.map((p) => (
-          <li
-            key={p.id}
-            className="mb-4 p-4 rounded-xl shadow bg-white dark:bg-gray-800 hover:ring-2 hover:ring-blue-400 transition"
-          >
-            <Link href={`/projects/${p.id}`}>
-              <div className="cursor-pointer">
-                <div className="font-semibold">{p.title}</div>
-                <div className="text-gray-500 text-sm">{p.created_at}</div>
-                <div className="mt-2">{p.description}</div>
-                <button
-                  className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
-                  tabIndex={-1}
-                  type="button"
-                  // No onClick—let Link handle navigation
-                >
-                  View Details
-                </button>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    </main>
   );
 }
