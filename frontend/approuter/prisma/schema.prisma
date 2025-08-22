@@ -15,30 +15,74 @@ model Project {
 
   title                   String
   description             String
+
+  // narrative / context
   data_types              String?
   model_type              String?
   deployment_env          String?
+  sector                  String?
+  significant_decision    Boolean?
+  lifecycle_stage         String?
+
+  // privacy
   special_category_data   Boolean  @default(false)
   processes_personal_data Boolean  @default(false)
   privacy_techniques      String?
+  retention_defined       Boolean?
+  lineage_doc_present     Boolean?
+
+  // explainability / interpretability
   explainability_tooling  String?
+  explainability_channels String?
   interpretability_rating String?
+  key_features            String?
+  documentation_consumers String?
+
+  // fairness & governance
+  fairness_definition     String?
+  fairness_stakeholders   String?
+  accountable_owner       String?
+  model_cards_published   Boolean?
+  escalation_route        String?
+
+  // technical metrics / robustness
+  metrics                 String?
+  validation_score        Float?
+  domain_threshold_met    Boolean?
+  robustness_tests        String?
+  robustness_above_baseline Boolean?
+  generative_risk_above_baseline Boolean?
+
+  // ops / security / resilience
   drift_detection         String?
   retraining_cadence      String?
   penetration_tested      Boolean?
+  worst_vuln_fix          String?
+  safe_mode               String?
+  mttr_target_hours       Float?
+
+  // sustainability
+  sustainability_estimate String?
+
+  // bias / inclusion
+  bias_tests              String?
+  bias_status             String?
+  diversity_steps         String?
+  community_reviews       Boolean?
 
   assessments Assessment[]
 
-  @@index([sessionId]) // index at model level
-  @@index([createdAt]) // optional but handy for sorting
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 model Assessment {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  flags     Json
-  project   Project  @relation(fields: [projectId], references: [id])
-  projectId Int
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  flags         Json
+  corpusVersion String?
+  project       Project  @relation(fields: [projectId], references: [id])
+  projectId     Int
 
   @@index([projectId])
   @@index([createdAt])

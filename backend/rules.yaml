@@ -129,3 +129,67 @@ rules:
     mitigation: "Conduct security testing to uncover vulnerabilities before deployment."
     trigger:
       pen_test_missing: true  # custom: T8 == "No"
+
+  - id: domain-threshold-not-met
+    clause: "Clause 2.1"
+    severity: "amber"
+    reason: "Domain minimum performance threshold not met."
+    mitigation: "Halt deployment until the domain threshold is achieved or revise requirements with stakeholders."
+    trigger:
+      domain_threshold_not_met: true
+
+  - id: robustness-below-baseline
+    clause: "Clause 2.2"
+    severity: "amber"
+    reason: "Robustness below baseline on stress/adversarial tests."
+    mitigation: "Add adversarial training or hardening; address failing tests before promotion."
+    trigger:
+      robustness_below_baseline: true
+
+  - id: genai-risk-above-baseline
+    clause: "Clause 2.5"
+    severity: "amber"
+    reason: "Generative AI hallucination/misuse risk above baseline."
+    mitigation: "Introduce retrieval-augmented validation, output filters, and usage guardrails; expand red-team coverage."
+    trigger:
+      genai_risk_above_baseline: true
+
+  - id: explainability-channels-missing
+    clause: "Clause 5.1"
+    severity: "amber"
+    reason: "No clear channels for surfacing explanations to users/auditors."
+    mitigation: "Provide at least one of: inline text, UI tooltips, API endpoint, or downloadable report."
+    trigger:
+      explainability_channels_missing: true
+
+  - id: transparency-audience-missing
+    clause: "Clause 7.2"
+    severity: "amber"
+    reason: "Planned documentation does not include any external audience."
+    mitigation: "Plan model/system cards for customers or public where appropriate; add regulator-facing documentation."
+    trigger:
+      documentation_consumers_includes: ["public", "customers", "regulators"]
+
+  - id: retention-not-defined
+    clause: "Clause 4.3"
+    severity: "amber"
+    reason: "Data retention schedule not defined."
+    mitigation: "Define retention period and purge/process for each dataset, aligned to ICO guidance."
+    trigger:
+      retention_not_defined: true
+
+  - id: sustainability-estimate-missing
+    clause: "Clause 11.1"
+    severity: "green"
+    reason: "No sustainability (GPU·h / kWh) estimate provided."
+    mitigation: "Record annualised compute and energy to support efficiency reviews."
+    trigger:
+      sustainability_estimate_missing: true
+
+  - id: community-reviews-missing
+    clause: "Clause 6.3"
+    severity: "amber"
+    reason: "No inclusion/community review despite using personal data."
+    mitigation: "Schedule engagement or review with affected communities and document feedback."
+    trigger:
+      community_reviews_missing_for_personal_data: true

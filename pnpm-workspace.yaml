@@ -1,3 +1,6 @@
 packages:
-  - 'backend'
-  - 'frontend/approuter'
+  - backend
+  - frontend/approuter
+
+ignoredBuiltDependencies:
+  - puppeteer

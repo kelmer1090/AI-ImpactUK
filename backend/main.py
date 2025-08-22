@@ -1,14 +1,16 @@
 # backend/main.py
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import os
 import pathlib
-import re
 import time
+import re
 from typing import Any, Dict, List, Optional
+from difflib import SequenceMatcher
 
-import requests
 import yaml
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +26,7 @@ from schemas import (
     SearchHit,
     AnalysisDebug,
 )
+from llm import generate_flags, default_schema_hint  # JSON-mode LLM client
 
 # ────────────────────────────────────────────────────────────────────────────────
 # App & CORS
@@ -40,12 +43,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Allow disabling LLM for A/B or offline runs
+USE_LLM = os.getenv("USE_LLM", "true").lower() == "true"
+
 # ────────────────────────────────────────────────────────────────────────────────
 # Load rules.yaml (legacy heuristic flags; optional – kept for continuity)
 # ────────────────────────────────────────────────────────────────────────────────
 rules_path = pathlib.Path(__file__).with_name("rules.yaml")
 try:
-    _loaded = yaml.safe_load(rules_path.read_text())
+    _loaded = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
     RULES: List[Dict[str, Any]] = (
         _loaded["rules"] if isinstance(_loaded, dict) and "rules" in _loaded else (_loaded or [])
     )
@@ -57,6 +63,11 @@ except Exception as e:
 
 def _ci_equals(a: Any, b: Any) -> bool:
     return isinstance(a, str) and isinstance(b, str) and a.strip().lower() == b.strip().lower()
+
+
+def _coerce_severity(val: Any) -> str:
+    v = (str(val or "green")).strip().lower()
+    return "red" if v.startswith("r") else "amber" if v.startswith("a") else "green"
 
 
 def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
@@ -199,6 +210,65 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
             reasons.append("penetration/red-team testing missing")
         else:
             return False
+        
+        # ----- new triggers (first-class fields) -----
+
+    if trig.get("domain_threshold_not_met"):
+        if payload.get("domain_threshold_met") is False:
+            reasons.append("domain threshold not met")
+        else:
+            return False
+
+    if trig.get("robustness_below_baseline"):
+        if payload.get("robustness_above_baseline") is False:
+            reasons.append("robustness below baseline")
+        else:
+            return False
+
+    if trig.get("genai_risk_above_baseline"):
+        if payload.get("generative_risk_above_baseline") is True:
+            reasons.append("generative AI risk above baseline")
+        else:
+            return False
+
+    if trig.get("retention_not_defined"):
+        if payload.get("retention_defined") is False:
+            reasons.append("data retention not defined")
+        else:
+            return False
+
+    if trig.get("sustainability_estimate_missing"):
+        se = payload.get("sustainability_estimate") or ""
+        if str(se).strip() == "":
+            reasons.append("sustainability estimate missing")
+        else:
+            return False
+
+    if trig.get("explainability_channels_missing"):
+        ch = payload.get("explainability_channels") or []
+        if isinstance(ch, list):
+            has = [c for c in ch if str(c).strip().lower() not in ("none", "")]
+            if not has:
+                reasons.append("no explainability surface for stakeholders")
+            else:
+                return False
+        else:
+            return False
+
+    if "documentation_consumers_includes" in trig:
+        # require that at least one of expected audiences is present
+        expected = [str(x).strip().lower() for x in trig["documentation_consumers_includes"]]
+        got = [str(x).strip().lower() for x in (payload.get("documentation_consumers") or [])]
+        if not any(x in got for x in expected):
+            reasons.append(f"documentation not planned for {expected}")
+        else:
+            return False
+
+    if trig.get("community_reviews_missing_for_personal_data"):
+        if payload.get("processes_personal_data") and not payload.get("community_reviews"):
+            reasons.append("no community/affected-group reviews despite personal data")
+        else:
+            return False
 
     return bool(reasons)
 
@@ -207,167 +277,298 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
 # Policy corpus + Retrieval (TF-IDF)
 # ────────────────────────────────────────────────────────────────────────────────
 POLICY: List[PolicyClause] = []
+POLICY_VERSION: str = ""  # computed hash of the loaded corpus
 _vectorizer: Optional[TfidfVectorizer] = None
-_matrix = None  # sparse matrix
-_idx_to_framework: List[str] = []
+_matrix = None  # sparse
+
+
+def _infer_phase(c: PolicyClause) -> str:
+    """Heuristic lifecycle phase: data | model | deployment."""
+    cat = (c.category or "").lower()
+    lab = (c.label or "").lower()
+    txt = f"{cat} {lab} {(c.text or '').lower()}"
+
+    data_kw = [
+        "data", "privacy", "personal", "retention", "consent",
+        "provenance", "access control", "collection", "minimisation",
+    ]
+    model_kw = [
+        "fairness", "bias", "explain", "interpret", "transparen", "accuracy",
+        "robust", "testing", "validation", "documentation", "model card",
+    ]
+    deploy_kw = [
+        "monitor", "incident", "security", "ops", "operation", "post", "drift",
+        "change", "audit", "retraining", "deployment",
+    ]
+
+    def has_any(words): return any(w in txt for w in words)
+    if has_any(data_kw): return "data"
+    if has_any(model_kw): return "model"
+    if has_any(deploy_kw): return "deployment"
+    fw = (c.framework or "").upper()
+    if fw == "ICO": return "data"
+    if fw == "DSIT": return "model"
+    return "deployment"
 
 
 def load_policy_corpus() -> None:
-    """Load policy_corpus.json exported from the frontend."""
-    global POLICY, _vectorizer, _matrix, _idx_to_framework
+    """Load policy_corpus.json exported from the frontend; tolerate empty/invalid."""
+    global POLICY, POLICY_VERSION, _vectorizer, _matrix
 
     corpus_path = pathlib.Path(__file__).with_name("policy_corpus.json")
     if not corpus_path.exists():
         logger.warning("policy_corpus.json not found. Retrieval will be empty.")
-        POLICY = []
-        _vectorizer, _matrix, _idx_to_framework = None, None, []
+        POLICY, POLICY_VERSION = [], ""
+        _vectorizer, _matrix = None, None
         return
 
-    rows = json.loads(corpus_path.read_text())
+    raw = corpus_path.read_text(encoding="utf-8").strip()
+    if not raw:
+        logger.warning("policy_corpus.json is empty. Retrieval disabled.")
+        POLICY, POLICY_VERSION = [], ""
+        _vectorizer, _matrix = None, None
+        return
+
+    try:
+        rows = json.loads(raw)
+        if not isinstance(rows, list) or not rows:
+            logger.warning("policy_corpus.json parsed but has no rows. Retrieval disabled.")
+            POLICY, POLICY_VERSION = [], ""
+            _vectorizer, _matrix = None, None
+            return
+    except Exception as e:
+        logger.warning(f"Failed to parse policy_corpus.json: {e}. Retrieval disabled.")
+        POLICY, POLICY_VERSION = [], ""
+        _vectorizer, _matrix = None, None
+        return
+
     POLICY = [PolicyClause(**row) for row in rows]
+    for i, p in enumerate(POLICY):
+        if getattr(p, "phase", None) in (None, ""):
+            POLICY[i].phase = _infer_phase(p)
+
+    POLICY_VERSION = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
 
     texts = [f"{p.label}. {p.text}" for p in POLICY]
-    _idx_to_framework = [p.framework or "" for p in POLICY]
-
     _vectorizer = TfidfVectorizer(stop_words="english")
     _matrix = _vectorizer.fit_transform(texts)
 
-    logger.info(f"Loaded policy corpus: {len(POLICY)} clauses.")
+    logger.info(f"Loaded policy corpus: {len(POLICY)} clauses (ver {POLICY_VERSION}).")
 
 
 load_policy_corpus()
 
 
-def retrieve(q: str, top_k: int = 8, frameworks: Optional[List[str]] = None) -> List[SearchHit]:
-    """Return top_k SearchHit for the free-text query."""
+def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) -> List[SearchHit]:
+    """Return diverse top_k SearchHit for the query, interleaving frameworks."""
     if not POLICY or _vectorizer is None or _matrix is None:
         return []
 
     vec = _vectorizer.transform([q])
-    sims = cosine_similarity(vec, _matrix)[0]  # 1 x N -> array of N
+    sims = cosine_similarity(vec, _matrix)[0]
 
-    # Build candidate list
-    candidates: List[SearchHit] = []
+    fw_allow = {f.upper() for f in frameworks} if frameworks else None
+    rows: List[tuple[int, float]] = []
     for idx, score in enumerate(sims):
-        clause = POLICY[idx]
-        if frameworks:
-            fw = (clause.framework or "").upper()
-            if fw not in [f.upper() for f in frameworks]:
-                continue
-        snippet = (clause.text[:180] + "…") if len(clause.text) > 180 else clause.text
-        candidates.append(
-            SearchHit(
-                clause_id=clause.id,
-                score=float(score),
-                snippet=snippet,
-                clause=clause,
-            )
+        fw = (POLICY[idx].framework or "").upper()
+        if fw_allow and fw not in fw_allow:
+            continue
+        rows.append((idx, float(score)))
+
+    rows.sort(key=lambda t: t[1], reverse=True)
+
+    # bucket by framework
+    buckets: Dict[str, List[SearchHit]] = {}
+    for idx, score in rows:
+        c = POLICY[idx]
+        fw = (c.framework or "UNK").upper()
+        if fw_allow and fw not in fw_allow:
+            continue
+        snippet = (c.text[:180] + "…") if len(c.text) > 180 else c.text
+        buckets.setdefault(fw, []).append(
+            SearchHit(clause_id=c.id, score=score, snippet=snippet, clause=c)
         )
 
-    candidates.sort(key=lambda h: h.score, reverse=True)
-    return candidates[:top_k]
+    fws = sorted(buckets.keys())
+    if not fws:
+        return []
+
+    per_fw = max(1, top_k // max(1, len(fws)))
+    capped = {fw: hits[:per_fw] for fw, hits in buckets.items()}
+
+    # round-robin interleave
+    out: List[SearchHit] = []
+    iters = {fw: list(hs) for fw, hs in capped.items()}
+    while len(out) < top_k and any(iters.values()):
+        for fw in fws:
+            if iters[fw]:
+                out.append(iters[fw].pop(0))
+                if len(out) >= top_k:
+                    break
+
+    if len(out) < top_k:
+        remaining: List[SearchHit] = []
+        for fw in fws:
+            remaining.extend(buckets[fw][len(capped.get(fw, [])):])
+        remaining.sort(key=lambda h: h.score, reverse=True)
+        out.extend(remaining[: (top_k - len(out))])
+
+    return out[:top_k]
 
 
 # ────────────────────────────────────────────────────────────────────────────────
-# Ollama / Llama 3.1-8B-Instruct client
+# Prompt builders (system + user)
 # ────────────────────────────────────────────────────────────────────────────────
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-OLLAMA_MODEL = "llama3.1:8b-instruct"  # pulled already: `ollama pull llama3.1:8b-instruct`
+SEVERITY_GUIDANCE = """
+Calibrate consistently:
+- "red" = legal/critical gap or high residual risk
+- "amber" = material risk that needs mitigation
+- "green" = aligned or low residual risk
+When possible, include a short evidence snippet (quote) from the clause or project facts.
+Return ONLY valid JSON that matches the provided schema.
+""".strip()
 
 
-def build_prompt(payload: ProjectInput, hits: List[SearchHit]) -> str:
-    """Compose a constrained JSON task for the model."""
-    # Pack a compact clause table for context (keep under context window)
-    lines = []
+def build_system() -> str:
+    return (
+        "You are an AI governance assessor. Convert UK policy clauses (DSIT, ICO, ISO/IEC 42001) "
+        "into actionable checks with conservative judgements. Output strict JSON only.\n\n"
+        + SEVERITY_GUIDANCE
+    )
+
+
+def build_user(payload: ProjectInput, hits: List[SearchHit]) -> str:
+    # helper to stringify list-like fields safely
+    def join_list(val) -> str:
+        try:
+            if val is None:
+                return ""
+            if isinstance(val, (list, tuple, set)):
+                return ", ".join([str(x) for x in val if x is not None])
+            # allow comma/semicolon/newline separated strings
+            if isinstance(val, str):
+                parts = [s.strip() for s in re.split(r"[,;\n]", val) if s.strip()]
+                return ", ".join(parts)
+            return str(val)
+        except Exception:
+            return ""
+
+    desc = (getattr(payload, "description", "") or "").strip()
+    title = (getattr(payload, "title", "") or "").strip()
+
+    # Safe reads with sensible defaults
+    model_type = getattr(payload, "model_type", None)
+    deployment_env = getattr(payload, "deployment_env", None)
+    data_types = getattr(payload, "data_types", []) or []
+
+    processes_personal_data = getattr(payload, "processes_personal_data", None)
+    special_category_data  = getattr(payload, "special_category_data", None)
+    explainability_tooling = getattr(payload, "explainability_tooling", None)
+    interpretability_rating = getattr(payload, "interpretability_rating", None)
+
+    fairness_definition    = getattr(payload, "fairness_definition", []) or []
+    accountable_owner      = getattr(payload, "accountable_owner", None)
+    model_cards_published  = getattr(payload, "model_cards_published", None)
+
+    credible_harms         = getattr(payload, "credible_harms", []) or []
+    safety_mitigations     = getattr(payload, "safety_mitigations", []) or []
+    drift_detection        = getattr(payload, "drift_detection", None)
+    retraining_cadence     = getattr(payload, "retraining_cadence", None)
+    penetration_tested     = getattr(payload, "penetration_tested", None)
+
+    # Pack a compact clause table for context + strict ID list
+    lines, id_list = [], []
     for h in hits:
         c = h.clause
+        id_list.append(c.id)
         lines.append(
             f"- id: {c.id}\n  label: {c.label}\n  framework: {c.framework}\n  text: {c.text}"
         )
     clauses_block = "\n".join(lines)
 
-    # Describe the project compactly
-    desc = payload.description.strip()
-    title = payload.title.strip()
-
-    return f"""You are an AI governance assessor. You convert UK AI policy clauses into actionable checks.
-
-Project:
+    return f"""Project:
 - title: {title}
 - description: {desc}
-- model_type: {payload.model_type}
-- deployment_env: {payload.deployment_env}
-- data_types: {', '.join(payload.data_types or [])}
-- privacy: processes_personal_data={payload.processes_personal_data}, special_category_data={payload.special_category_data}
-- explainability_tooling: {payload.explainability_tooling}
-- interpretability_rating: {payload.interpretability_rating}
-- fairness_definition: {', '.join(payload.fairness_definition or [])}
-- accountable_owner: {payload.accountable_owner}
-- model_cards_published: {payload.model_cards_published}
-- safety: harms={', '.join(payload.credible_harms or [])}, mitigations={', '.join(payload.safety_mitigations or [])}, drift_detection={payload.drift_detection}, retraining_cadence={payload.retraining_cadence}, penetration_tested={payload.penetration_tested}
+- model_type: {model_type}
+- deployment_env: {deployment_env}
+- data_types: {join_list(data_types)}
+- privacy: processes_personal_data={processes_personal_data}, special_category_data={special_category_data}
+- explainability_tooling: {explainability_tooling}
+- interpretability_rating: {interpretability_rating}
+- fairness_definition: {join_list(fairness_definition)}
+- accountable_owner: {accountable_owner}
+- model_cards_published: {model_cards_published}
+- safety: harms={join_list(credible_harms)}, mitigations={join_list(safety_mitigations)}, drift_detection={drift_detection}, retraining_cadence={retraining_cadence}, penetration_tested={penetration_tested}
 
 Candidate policy clauses (DSIT, ICO, ISO):
 {clauses_block}
 
+VALID_CLAUSE_IDS = {json.dumps(id_list)}
+
 TASK:
 1) Use only the clauses above to evaluate the project.
-2) Produce a JSON array named "flags" (and nothing else). Each item must be:
+2) The "clause" field for EACH flag MUST be one of VALID_CLAUSE_IDS (do not invent new IDs).
+3) Produce ONLY this JSON object:
    {{
-     "id": "<clause id>",
-     "clause": "<clause id again>",
-     "severity": "red" | "amber" | "green",
-     "reason": "<one-sentence 'because' explanation that references project facts>",
-     "mitigation": "<concrete step>"  // may be null
+     "flags": [
+       {{
+         "id": "<clause id>",
+         "clause": "<clause id (must be in VALID_CLAUSE_IDS)>",
+         "severity": "red" | "amber" | "green",
+         "reason": "<one-sentence 'because' explanation referencing project facts>",
+         "mitigation": "<concrete step or null>",
+         "evidence": "<short quote/snippet or null>"
+       }}
+     ]
    }}
-3) Be conservative: choose "green" only when clearly compliant; use "amber" for partial/uncertain; "red" for clear gaps.
-4) Return just the JSON array; do not add commentary.
+4) Be conservative: choose "green" only when clearly compliant; use "amber" for partial/uncertain; "red" for clear gaps.
+5) Return just the JSON object; no extra text.
 """
-    
 
-def call_ollama(prompt: str) -> str:
-    """Call Ollama and return the raw 'response' text."""
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "temperature": 0.2,
-            "num_ctx": 8192,
-        },
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Metadata enrichment
+# ────────────────────────────────────────────────────────────────────────────────
+def _lookup_clause_meta(clause_id: str, hits: List[SearchHit]) -> Optional[Dict[str, Any]]:
+    cid = (clause_id or "").strip().lower()
+    if cid:
+        for c in POLICY:
+            if (c.id or "").strip().lower() == cid or (c.label or "").strip().lower() == cid:
+                return {
+                    "label": c.label, "link": c.link, "framework": c.framework,
+                    "document": c.document, "phase": c.phase or _infer_phase(c)
+                }
+    if hits:
+        c = hits[0].clause
+        return {
+            "label": c.label, "link": c.link, "framework": c.framework,
+            "document": c.document, "phase": c.phase or _infer_phase(c),
+            "matched_by": "retrieval",
+        }
+    return None
+
+
+def _best_hit_for_reason(hits: List[SearchHit], reason: str) -> Optional[Dict[str, Any]]:
+    if not hits:
+        return None
+    reason_l = (reason or "").lower()
+    best = None
+    best_score = -1.0
+    for h in hits[:8]:
+        c = h.clause
+        sim = SequenceMatcher(None, reason_l, (c.text or "").lower()).ratio()
+        score = 0.7 * float(h.score) + 0.3 * float(sim)
+        if score > best_score:
+            best_score = score
+            best = c
+    if not best:
+        best = hits[0].clause
+    return {
+        "label": best.label, "link": best.link, "framework": best.framework,
+        "document": best.document, "phase": best.phase or _infer_phase(best),
+        "matched_by": "reason-best-hit",
     }
-    r = requests.post(OLLAMA_URL, json=payload, timeout=120)
-    r.raise_for_status()
-    data = r.json()
-    return data.get("response", "")
-
-
-def _extract_json_array(text: str) -> List[Dict[str, Any]]:
-    """
-    Try to robustly parse a JSON array from LLM output.
-    We search first '[' ... last ']' to avoid stray text.
-    """
-    try:
-        start = text.find("[")
-        end = text.rfind("]")
-        if start != -1 and end != -1 and end > start:
-            return json.loads(text[start : end + 1])
-    except Exception:
-        pass
-    # Try fence pattern ```json ... ```
-    m = re.search(r"```json\s*(\[.*?\])\s*```", text, flags=re.S)
-    if m:
-        try:
-            return json.loads(m.group(1))
-        except Exception:
-            pass
-    return []
-
-
-def _coerce_severity(val: Any) -> str:
-    v = str(val).strip().lower()
-    if v in {"red", "amber", "green"}:
-        return v
-    return "green"
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -383,6 +584,12 @@ def list_clauses():
     return POLICY
 
 
+@app.get("/admin/reload")
+def admin_reload():
+    load_policy_corpus()
+    return {"ok": True, "count": len(POLICY), "version": POLICY_VERSION}
+
+
 @app.post("/search", response_model=List[SearchHit])
 def search(q: SearchQuery):
     return retrieve(q.q, top_k=q.top_k, frameworks=q.frameworks)
@@ -392,83 +599,72 @@ def search(q: SearchQuery):
 def analyse(payload: ProjectInput):
     t0 = time.perf_counter()
 
-    # 1) Retrieve relevant clauses from the policy corpus
     hits = retrieve(
         q=f"{payload.title}\n{payload.description}\n{payload.model_type}\n{payload.deployment_env}",
-        top_k=10,
+        top_k=20,
         frameworks=None,
     )
     t_retrieve = (time.perf_counter() - t0) * 1000.0
 
-    # 2) Build prompt + call LLM
-    prompt = build_prompt(payload, hits)
+    system = build_system()
+    user = build_user(payload, hits)
+    schema_hint = default_schema_hint()
+
     t1 = time.perf_counter()
-    raw_response = ""
-    try:
-        raw_response = call_ollama(prompt)
-    except Exception as e:
-        logger.error(f"Ollama call failed: {e}")
-        raw_response = "[]"
+    llm_out: Dict[str, Any] = {"flags": []}
+    if USE_LLM:
+        try:
+            llm_out = generate_flags(system=system, user=user, json_schema_hint=schema_hint)
+        except Exception as e:
+            logger.error(f"Ollama call failed: {e}")
+            llm_out = {"flags": []}
     t_llm = (time.perf_counter() - t1) * 1000.0
 
-    # 3) Parse flags from LLM output
-    llm_flags_json = _extract_json_array(raw_response)
     llm_flags: List[Flag] = []
-    for item in llm_flags_json:
+    for f in llm_out.get("flags", []):
         try:
-            fid = str(item.get("id") or item.get("clause") or "unknown")
-            clause_id = str(item.get("clause") or fid)
-            reason = str(item.get("reason") or "").strip()
-            mitigation = item.get("mitigation")
-            sev = _coerce_severity(item.get("severity"))
+            clause_id = f.get("clause") or f.get("id") or ""
+            meta = f.get("meta") or {}
 
-            # Enrich with clickable metadata when we can find the clause
-            meta = None
-            evidence = None
-            model = OLLAMA_MODEL
-            # attach link/label if present
-            c = next((h.clause for h in hits if h.clause.id == clause_id), None)
-            if c:
-                meta = {"label": c.label, "link": c.link, "framework": c.framework, "document": c.document}
+            enrich = _lookup_clause_meta(clause_id, hits)
+            if not enrich:
+                enrich = _best_hit_for_reason(hits, f.get("reason", "")) or {}
 
-            llm_flags.append(
-                Flag(
-                    id=fid,
-                    clause=clause_id,
-                    severity=sev,  # type: ignore
-                    reason=reason,
-                    mitigation=mitigation,
-                    evidence=evidence,
-                    model=model,
-                    meta=meta,
-                )
-            )
+            f["meta"] = {**meta, **enrich}
+
+            if not clause_id and enrich.get("label"):
+                for h in hits:
+                    if h.clause.label == enrich["label"]:
+                        f["clause"] = h.clause.id
+                        break
+
+            llm_flags.append(Flag(**f))
         except Exception as e:
             logger.warning(f"Skipped malformed LLM flag: {e}")
 
-    # 4) (Optional) add legacy rule-based flags for extra coverage
     payload_dict = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
     for rule in RULES:
         try:
             if evaluate_rule(rule, payload_dict):
+                clause_id = str(rule.get("clause", "")) or ""
+                meta = _lookup_clause_meta(clause_id, hits) or {"source": "legacy-rule"}
                 llm_flags.append(
                     Flag(
                         id=str(rule.get("id", "")),
-                        clause=str(rule.get("clause", "")),
-                        severity=_coerce_severity(rule.get("severity", "green")),  # type: ignore
+                        clause=clause_id or (meta.get("label") or "unknown"),
+                        severity=_coerce_severity(rule.get("severity", "green")),
                         reason=str(rule.get("reason", "")),
                         mitigation=rule.get("mitigation"),
-                        meta={"source": "legacy-rule"},
+                        meta={**meta, "source": "legacy-rule"},
                     )
                 )
         except Exception as e:
             logger.error(f"Error evaluating legacy rule {rule.get('id')}: {e}")
 
-    # 5) Return with debug block (good for audits and tuning)
     debug = AnalysisDebug(
         retrieved=hits,
-        prompt=prompt,
-        raw_response=raw_response,
+        prompt=f"system:\n{system}\n\nuser:\n{user}",
+        raw_response="",
         timings_ms={"retrieval": t_retrieve, "llm": t_llm},
     )
-    return AnalysisOut(flags=llm_flags, debug=debug)
+    return AnalysisOut(flags=llm_flags, debug=debug, corpus_version=POLICY_VERSION)

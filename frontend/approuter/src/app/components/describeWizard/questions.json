@@ -22,14 +22,7 @@
         "id": "P2",
         "type": "select",
         "label": "Which sector best describes your use-case?",
-        "options": [
-          "Health",
-          "Finance",
-          "HR",
-          "Critical Infrastructure",
-          "Consumer",
-          "Other"
-        ],
+        "options": ["Health", "Finance", "HR", "Critical Infrastructure", "Consumer", "Other"],
         "required": true
       },
       {
@@ -118,6 +111,13 @@
             "label": "Robustness score > baseline?",
             "options": ["Yes", "No"],
             "required": false
+          },
+          {
+            "id": "T7b",
+            "type": "radio",
+            "label": "Generative AI risk: hallucination/misuse red-team score > baseline?",
+            "options": ["Yes", "No"],
+            "required": false
           }
         ]
       },
@@ -155,6 +155,18 @@
             "required": false
           }
         ]
+      },
+      {
+        "title": "Sustainability",
+        "questions": [
+          {
+            "id": "T12",
+            "type": "text",
+            "label": "Estimated annual compute (GPU·h) & energy (kWh)",
+            "helperText": "Example: 12,000 GPU·h; 18,500 kWh",
+            "required": false
+          }
+        ]
       }
     ]
   },
@@ -170,13 +182,7 @@
             "id": "S12",
             "type": "multiselect",
             "label": "How are explanations surfaced to each stakeholder group (user, regulator, internal audit)?",
-            "options": [
-              "Inline text",
-              "PDF report",
-              "UI tooltip",
-              "API",
-              "None"
-            ],
+            "options": ["Inline text", "PDF report", "UI tooltip", "API", "None"],
             "required": false
           },
           {
@@ -228,12 +234,7 @@
             "id": "S17",
             "type": "multiselect",
             "label": "Techniques applied",
-            "options": [
-              "Pseudonymisation",
-              "Differential privacy",
-              "Fed-learning",
-              "None"
-            ],
+            "options": ["Pseudonymisation", "Differential privacy", "Fed-learning", "None"],
             "required": false
           }
         ]
@@ -251,12 +252,7 @@
             "id": "S19",
             "type": "checklist",
             "label": "Safety mitigations in place",
-            "options": [
-              "Human-in-the-loop",
-              "Kill-switch",
-              "Rate-limits",
-              "Other"
-            ],
+            "options": ["Human-in-the-loop", "Kill-switch", "Rate-limits", "Other"],
             "required": false
           }
         ]
@@ -274,23 +270,14 @@
             "id": "S21",
             "type": "select",
             "label": "Bias tests run & metrics",
-            "options": [
-              "Demographic parity",
-              "Equal opportunity",
-              "Calibration",
-              "None"
-            ],
+            "options": ["Demographic parity", "Equal opportunity", "Calibration", "None"],
             "required": false
           },
           {
             "id": "S22",
             "type": "radio",
             "label": "Bias status",
-            "options": [
-              "Passed",
-              "Needs work",
-              "Not yet tested"
-            ],
+            "options": ["Passed", "Needs work", "Not yet tested"],
             "required": false
           }
         ]
@@ -309,12 +296,7 @@
             "id": "G23",
             "type": "multiselect",
             "label": "Which fairness definition aligns with your product goal?",
-            "options": [
-              "Group",
-              "Individual",
-              "Counterfactual",
-              "Other"
-            ],
+            "options": ["Group", "Individual", "Counterfactual", "Other"],
             "required": false
           },
           {
@@ -356,12 +338,7 @@
             "id": "G28",
             "type": "multiselect",
             "label": "Documentation consumers",
-            "options": [
-              "Public",
-              "Customers",
-              "Regulators",
-              "Internal only"
-            ],
+            "options": ["Public", "Customers", "Regulators", "Internal only"],
             "required": false
           }
         ]
