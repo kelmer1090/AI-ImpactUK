@@ -1,3 +1,4 @@
+# backend/schemas.py
 from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any
@@ -10,7 +11,7 @@ class ProjectInput(BaseModel):
     model_type: Optional[str] = None
     deployment_env: Optional[str] = None
 
-    # context (not all persisted previously, now first-class)
+    # context
     sector: Optional[str] = None
     significant_decision: Optional[bool] = None
     lifecycle_stage: Optional[str] = None
@@ -21,6 +22,10 @@ class ProjectInput(BaseModel):
     privacy_techniques: Optional[List[str]] = None
     retention_defined: Optional[bool] = None
     lineage_doc_present: Optional[bool] = None
+
+    # (new) role + DPIA risk level
+    controller_role: Optional[str] = None
+    risk_level: Optional[str] = None
 
     # ---- explainability / interpretability ----
     explainability_tooling: Optional[str] = None
@@ -44,6 +49,11 @@ class ProjectInput(BaseModel):
     robustness_above_baseline: Optional[bool] = None
     generative_risk_above_baseline: Optional[bool] = None
 
+    # (new) pre-deploy & security first-class booleans
+    pre_deployment_testing: Optional[bool] = None
+    access_controls_defined: Optional[bool] = None
+    supply_chain_review: Optional[bool] = None
+
     # ---- ops / security / resilience ----
     drift_detection: Optional[str] = None
     retraining_cadence: Optional[str] = None
@@ -63,6 +73,16 @@ class ProjectInput(BaseModel):
     bias_status: Optional[str] = None
     diversity_steps: Optional[str] = None
     community_reviews: Optional[bool] = None
+
+    # (new) transparency & oversight booleans
+    outputs_exposed_to_end_users: Optional[bool] = None
+    output_label_includes_probabilistic: Optional[bool] = None
+    human_oversight_defined: Optional[bool] = None
+    automation_bias_controls_defined: Optional[bool] = None
+
+    # (new) data quality readiness
+    data_quality_checks: Optional[bool] = None
+
 
 class PolicyClause(BaseModel):
     id: str
@@ -106,4 +126,4 @@ class AnalysisDebug(BaseModel):
 class AnalysisOut(BaseModel):
     flags: List[Flag]
     debug: Optional[AnalysisDebug] = None
-    corpus_version: Optional[str] = None  # returned by /analyse
+    corpus_version: Optional[str] = None

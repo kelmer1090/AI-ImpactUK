@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -13,16 +14,16 @@ model Project {
   sessionId String?
   userId    Int?
 
-  title                   String
-  description             String
+  title       String
+  description String
 
   // narrative / context
-  data_types              String?
-  model_type              String?
-  deployment_env          String?
-  sector                  String?
-  significant_decision    Boolean?
-  lifecycle_stage         String?
+  data_types           String?
+  model_type           String?
+  deployment_env       String?
+  sector               String?
+  significant_decision Boolean?
+  lifecycle_stage      String?
 
   // privacy
   special_category_data   Boolean  @default(false)
@@ -33,42 +34,48 @@ model Project {
 
   // explainability / interpretability
   explainability_tooling  String?
-  explainability_channels String?
+  explainability_channels String[] @default([])  // list w/ default
   interpretability_rating String?
   key_features            String?
-  documentation_consumers String?
+  documentation_consumers String[] @default([])  // list w/ default
 
   // fairness & governance
-  fairness_definition     String?
-  fairness_stakeholders   String?
-  accountable_owner       String?
-  model_cards_published   Boolean?
-  escalation_route        String?
+  fairness_definition   String?
+  fairness_stakeholders String?
+  accountable_owner     String?
+  model_cards_published Boolean?
+  escalation_route      String?
 
   // technical metrics / robustness
-  metrics                 String?
-  validation_score        Float?
-  domain_threshold_met    Boolean?
-  robustness_tests        String?
-  robustness_above_baseline Boolean?
+  metrics                        String?
+  validation_score               Float?
+  domain_threshold_met           Boolean?
+  domain_threshold_not_met       Boolean?   // convenience for rules (optional scalar OK)
+  robustness_tests               String?
+  robustness_above_baseline      Boolean?
+  robustness_below_baseline      Boolean?   // convenience for rules (optional scalar OK)
   generative_risk_above_baseline Boolean?
 
   // ops / security / resilience
-  drift_detection         String?
-  retraining_cadence      String?
-  penetration_tested      Boolean?
-  worst_vuln_fix          String?
-  safe_mode               String?
-  mttr_target_hours       Float?
+  drift_detection    String?
+  retraining_cadence String?
+  penetration_tested Boolean?
+  worst_vuln_fix     String?
+  safe_mode          String?
+  mttr_target_hours  Float?
 
   // sustainability
   sustainability_estimate String?
 
+  // risk / safety inputs
+  credible_harms     String[] @default([])  // list w/ default
+  safety_mitigations String[] @default([])  // list w/ default
+
   // bias / inclusion
-  bias_tests              String?
-  bias_status             String?
-  diversity_steps         String?
-  community_reviews       Boolean?
+  bias_tests        String?
+  bias_status       String?
+  diversity_steps   String?
+  community_reviews Boolean?
 
   assessments Assessment[]
 

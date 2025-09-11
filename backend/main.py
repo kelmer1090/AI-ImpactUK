@@ -2,18 +2,23 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
 import pathlib
 import time
 import re
+import math
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from difflib import SequenceMatcher
+from fastapi import Request
 
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -38,7 +43,7 @@ app = FastAPI(title="AI-Impact UK API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -71,10 +76,16 @@ def _coerce_severity(val: Any) -> str:
 
 
 def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
-    """Very small legacy trigger engine; returns True if rule applies."""
-    trig = rule.get("trigger", {})
+    """
+    Evaluate a rule's trigger block against the payload.
+
+    IMPORTANT: Booleans are STRICT — rules only fire on explicit True/False,
+    not on missing/empty values.
+    """
+    trig = rule.get("trigger", {}) or {}
     reasons = []
 
+    # ---------- explicit checks ----------
     if "description_min_length" in trig:
         min_len = trig["description_min_length"]
         desc = (payload.get("description") or "")
@@ -145,7 +156,7 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
 
     if trig.get("interpretability_not_rated"):
         rating = payload.get("interpretability_rating")
-        if not rating or (isinstance(rating, str) and rating.strip() == ""):
+        if rating in (None, "") or (isinstance(rating, str) and rating.strip() == ""):
             reasons.append("interpretability not rated")
         else:
             return False
@@ -166,16 +177,10 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
     if "model_cards_published" in trig:
         expected = trig["model_cards_published"]
         actual = payload.get("model_cards_published")
-        if actual is None:
-            if expected is False:
-                reasons.append("model cards not planned (absent field)")
-            else:
-                return False
+        if isinstance(actual, bool) and actual is expected:
+            reasons.append(f"model_cards_published == {actual}")
         else:
-            if actual == expected:
-                reasons.append(f"model_cards_published == {actual}")
-            else:
-                return False
+            return False
 
     if trig.get("credible_harms_listed"):
         harms = payload.get("credible_harms") or []
@@ -206,13 +211,12 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
             return False
 
     if trig.get("pen_test_missing"):
-        if not payload.get("penetration_tested", False):
+        if payload.get("penetration_tested") is False:
             reasons.append("penetration/red-team testing missing")
         else:
             return False
-        
-        # ----- new triggers (first-class fields) -----
 
+    # First-class booleans that should only fire when explicitly False/True
     if trig.get("domain_threshold_not_met"):
         if payload.get("domain_threshold_met") is False:
             reasons.append("domain threshold not met")
@@ -256,7 +260,6 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
             return False
 
     if "documentation_consumers_includes" in trig:
-        # require that at least one of expected audiences is present
         expected = [str(x).strip().lower() for x in trig["documentation_consumers_includes"]]
         got = [str(x).strip().lower() for x in (payload.get("documentation_consumers") or [])]
         if not any(x in got for x in expected):
@@ -265,13 +268,77 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
             return False
 
     if trig.get("community_reviews_missing_for_personal_data"):
-        if payload.get("processes_personal_data") and not payload.get("community_reviews"):
+        if payload.get("processes_personal_data") is True and payload.get("community_reviews") is False:
             reasons.append("no community/affected-group reviews despite personal data")
         else:
             return False
 
-    return bool(reasons)
+    # ---------- generic matcher ----------
+    handled_keys = {
+        "description_min_length","title_missing","model_type","data_types",
+        "special_category_data","processes_personal_data","privacy_techniques",
+        "explainability_tooling_missing","interpretability_not_rated",
+        "fairness_definition_missing","accountable_owner_missing",
+        "model_cards_published","credible_harms_listed","safety_mitigations",
+        "drift_detection_missing","retraining_cadence","pen_test_missing",
+        "domain_threshold_not_met","robustness_below_baseline",
+        "genai_risk_above_baseline","retention_not_defined",
+        "sustainability_estimate_missing","explainability_channels_missing",
+        "documentation_consumers_includes","community_reviews_missing_for_personal_data",
+    }
 
+    def _empty(x):
+        return x is None or (isinstance(x, str) and x.strip()=="") or (isinstance(x, (list,tuple,set,dict)) and len(x)==0)
+
+    for k, expected in trig.items():
+        if k in handled_keys:
+            continue
+
+        actual = payload.get(k, None)
+
+        if isinstance(expected, list) and len(expected) == 0:
+            if _empty(actual):
+                reasons.append(f"{k} empty as required")
+            else:
+                return False
+            continue
+
+        if isinstance(expected, list) and len(expected) > 0:
+            if isinstance(actual, (list, tuple, set)):
+                a_set = {str(x).strip().lower() for x in actual}
+                e_set = {str(x).strip().lower() for x in expected}
+                if a_set & e_set:
+                    reasons.append(f"{k} intersects expected values")
+                else:
+                    return False
+            else:
+                if any(_ci_equals(actual, e) for e in expected):
+                    reasons.append(f"{k} == one of expected values")
+                else:
+                    return False
+            continue
+
+        if isinstance(expected, bool):
+            if isinstance(actual, bool) and (actual is expected):
+                reasons.append(f"{k} == {expected}")
+            else:
+                return False
+            continue
+
+        if isinstance(expected, (str, int, float)):
+            if isinstance(expected, str) and isinstance(actual, str):
+                if _ci_equals(actual, expected):
+                    reasons.append(f"{k} matches '{expected}'")
+                else:
+                    return False
+            else:
+                if actual == expected:
+                    reasons.append(f"{k} == {expected}")
+                else:
+                    return False
+            continue
+
+    return bool(reasons)
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Policy corpus + Retrieval (TF-IDF)
@@ -283,23 +350,13 @@ _matrix = None  # sparse
 
 
 def _infer_phase(c: PolicyClause) -> str:
-    """Heuristic lifecycle phase: data | model | deployment."""
     cat = (c.category or "").lower()
     lab = (c.label or "").lower()
     txt = f"{cat} {lab} {(c.text or '').lower()}"
 
-    data_kw = [
-        "data", "privacy", "personal", "retention", "consent",
-        "provenance", "access control", "collection", "minimisation",
-    ]
-    model_kw = [
-        "fairness", "bias", "explain", "interpret", "transparen", "accuracy",
-        "robust", "testing", "validation", "documentation", "model card",
-    ]
-    deploy_kw = [
-        "monitor", "incident", "security", "ops", "operation", "post", "drift",
-        "change", "audit", "retraining", "deployment",
-    ]
+    data_kw = ["data","privacy","personal","retention","consent","provenance","access control","collection","minimisation"]
+    model_kw = ["fairness","bias","explain","interpret","transparen","accuracy","robust","testing","validation","documentation","model card"]
+    deploy_kw = ["monitor","incident","security","ops","operation","post","drift","change","audit","retraining","deployment"]
 
     def has_any(words): return any(w in txt for w in words)
     if has_any(data_kw): return "data"
@@ -312,7 +369,6 @@ def _infer_phase(c: PolicyClause) -> str:
 
 
 def load_policy_corpus() -> None:
-    """Load policy_corpus.json exported from the frontend; tolerate empty/invalid."""
     global POLICY, POLICY_VERSION, _vectorizer, _matrix
 
     corpus_path = pathlib.Path(__file__).with_name("policy_corpus.json")
@@ -355,12 +411,10 @@ def load_policy_corpus() -> None:
 
     logger.info(f"Loaded policy corpus: {len(POLICY)} clauses (ver {POLICY_VERSION}).")
 
-
 load_policy_corpus()
 
 
 def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) -> List[SearchHit]:
-    """Return diverse top_k SearchHit for the query, interleaving frameworks."""
     if not POLICY or _vectorizer is None or _matrix is None:
         return []
 
@@ -377,7 +431,6 @@ def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) ->
 
     rows.sort(key=lambda t: t[1], reverse=True)
 
-    # bucket by framework
     buckets: Dict[str, List[SearchHit]] = {}
     for idx, score in rows:
         c = POLICY[idx]
@@ -396,7 +449,6 @@ def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) ->
     per_fw = max(1, top_k // max(1, len(fws)))
     capped = {fw: hits[:per_fw] for fw, hits in buckets.items()}
 
-    # round-robin interleave
     out: List[SearchHit] = []
     iters = {fw: list(hs) for fw, hs in capped.items()}
     while len(out) < top_k and any(iters.values()):
@@ -414,7 +466,6 @@ def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) ->
         out.extend(remaining[: (top_k - len(out))])
 
     return out[:top_k]
-
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Prompt builders (system + user)
@@ -438,14 +489,12 @@ def build_system() -> str:
 
 
 def build_user(payload: ProjectInput, hits: List[SearchHit]) -> str:
-    # helper to stringify list-like fields safely
     def join_list(val) -> str:
         try:
             if val is None:
                 return ""
             if isinstance(val, (list, tuple, set)):
                 return ", ".join([str(x) for x in val if x is not None])
-            # allow comma/semicolon/newline separated strings
             if isinstance(val, str):
                 parts = [s.strip() for s in re.split(r"[,;\n]", val) if s.strip()]
                 return ", ".join(parts)
@@ -456,7 +505,6 @@ def build_user(payload: ProjectInput, hits: List[SearchHit]) -> str:
     desc = (getattr(payload, "description", "") or "").strip()
     title = (getattr(payload, "title", "") or "").strip()
 
-    # Safe reads with sensible defaults
     model_type = getattr(payload, "model_type", None)
     deployment_env = getattr(payload, "deployment_env", None)
     data_types = getattr(payload, "data_types", []) or []
@@ -476,7 +524,6 @@ def build_user(payload: ProjectInput, hits: List[SearchHit]) -> str:
     retraining_cadence     = getattr(payload, "retraining_cadence", None)
     penetration_tested     = getattr(payload, "penetration_tested", None)
 
-    # Pack a compact clause table for context + strict ID list
     lines, id_list = [], []
     for h in hits:
         c = h.clause
@@ -525,7 +572,120 @@ TASK:
 5) Return just the JSON object; no extra text.
 """
 
+# ─────────────────────────────────────────────
+def _has_real_number(v: Any) -> bool:
+    try:
+        if v is None: return False
+        f = float(v)
+        return not math.isnan(f)
+    except Exception:
+        return False
 
+def _synthesise_green_flags(payload: ProjectInput, hits: List[SearchHit]) -> List[Flag]:
+    """If no issues were found, emit a few GREEN checks so the UI can show 'green %'."""
+    def has_clause(cid: str) -> bool:
+        cl = cid.strip().lower()
+        return any((h.clause.id or "").strip().lower() == cl for h in hits)
+
+    ps: Dict[str, Any] = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    greens: List[Flag] = []
+
+    # 1) Data governance in place
+    if ps.get("retention_defined") and ps.get("lineage_doc_present") and (ps.get("privacy_techniques") or []):
+        cid = "ISO 42001 §8.2 Data-Management"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Data governance present because retention is defined, lineage documented and privacy techniques are applied.",
+                mitigation=None, evidence="retention_defined=True; lineage_doc_present=True; privacy_techniques set"
+            ))
+
+    # 2) Transparency & explainability present
+    if ps.get("explainability_tooling") and (ps.get("explainability_channels") or []):
+        cid = "DSIT §3.2.3 Transparency"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Transparent/explainable because explainability tooling and channels for users are defined.",
+                mitigation=None, evidence=str(ps.get("explainability_tooling"))
+            ))
+
+    # 3) Interpretability adequate
+    ir = ps.get("interpretability_rating")
+    try:
+        ir_ok = (float(ir) >= 3)
+    except Exception:
+        ir_ok = str(ir).strip() in {"3","4","5","high"}
+    if ir_ok and ps.get("explainability_tooling"):
+        cid = "ISO 42001 AnnexA A.6.8 Explainability"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Interpretability is adequate for the context because interpretability is rated ≥3 and tooling is in place.",
+                mitigation=None, evidence=f"interpretability_rating={ir}"
+            ))
+
+    # 4) Pre-deployment testing & pen test done
+    if ps.get("penetration_tested") and ps.get("pre_deployment_testing"):
+        cid = "ICO-Audit Pre-Deployment-Testing"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Pre-deployment testing policy applied and penetration testing completed.",
+                mitigation=None, evidence="penetration_tested=True; pre_deployment_testing=True"
+            ))
+
+    # 5) Performance threshold met
+    if ps.get("domain_threshold_met") and _has_real_number(ps.get("validation_score")):
+        cid = "ISO 42001 §8.3 Design-Development"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Performance meets planned domain threshold with recorded validation score.",
+                mitigation=None, evidence=f"validation_score={ps.get('validation_score')}"
+            ))
+
+    # 6) Robustness above baseline
+    if ps.get("robustness_above_baseline"):
+        cid = "ISO 42001 AnnexA A.6.5 Robustness-Accuracy"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Robustness testing is above baseline according to stress/adversarial evaluations.",
+                mitigation=None, evidence="robustness_above_baseline=True"
+            ))
+
+    # 7) Accountability clear
+    if ps.get("accountable_owner") and ps.get("escalation_route"):
+        cid = "DSIT §3.2.3 Accountability"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Clear accountability and escalation route are defined across the lifecycle.",
+                mitigation=None, evidence=str(ps.get("accountable_owner"))
+            ))
+
+    # 8) Data quality controls in place (NEW)
+    if ps.get("data_quality_checks") and _has_real_number(ps.get("validation_score")):
+        cid = "ISO 42001 AnnexA A.6.2 Data-Quality"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="Data quality controls evidenced by validation score and explicit data-quality checks.",
+                mitigation=None, evidence=f"validation_score={ps.get('validation_score')}; data_quality_checks=True"
+            ))
+
+    # 9) Probabilistic labelling & context provided to users (NEW)
+    if ps.get("outputs_exposed_to_end_users") and ps.get("output_label_includes_probabilistic"):
+        cid = "ICO-Audit Inference-Labeling"
+        if has_clause(cid):
+            greens.append(Flag(
+                id=cid, clause=cid, severity="green",
+                reason="User-facing outputs are clearly labelled as probabilistic with provenance/context.",
+                mitigation=None, evidence="output_label_includes_probabilistic=True"
+            ))
+
+    return greens[:8]  # keep tidy
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Metadata enrichment
@@ -569,7 +729,6 @@ def _best_hit_for_reason(hits: List[SearchHit], reason: str) -> Optional[Dict[st
         "document": best.document, "phase": best.phase or _infer_phase(best),
         "matched_by": "reason-best-hit",
     }
-
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Endpoints
@@ -620,10 +779,12 @@ def analyse(payload: ProjectInput):
             llm_out = {"flags": []}
     t_llm = (time.perf_counter() - t1) * 1000.0
 
-    llm_flags: List[Flag] = []
+    # ── Collect model flags and enforce VALID_CLAUSE_IDS guard ────────────────
+    valid_ids = {(h.clause.id or "").strip().lower() for h in hits}
+    model_flags: List[Flag] = []
     for f in llm_out.get("flags", []):
         try:
-            clause_id = f.get("clause") or f.get("id") or ""
+            clause_id = (f.get("clause") or f.get("id") or "").strip()
             meta = f.get("meta") or {}
 
             enrich = _lookup_clause_meta(clause_id, hits)
@@ -634,21 +795,29 @@ def analyse(payload: ProjectInput):
 
             if not clause_id and enrich.get("label"):
                 for h in hits:
-                    if h.clause.label == enrich["label"]:
+                    if (h.clause.label or "").strip().lower() == (enrich.get("label") or "").strip().lower():
                         f["clause"] = h.clause.id
+                        clause_id = h.clause.id
                         break
 
-            llm_flags.append(Flag(**f))
+            # Drop any LLM flag whose clause is not in VALID_CLAUSE_IDS
+            if (clause_id or "").strip().lower() not in valid_ids:
+                logger.info(f"Dropping LLM flag with out-of-scope clause: {f.get('clause')!r}")
+                continue
+
+            model_flags.append(Flag(**f))
         except Exception as e:
             logger.warning(f"Skipped malformed LLM flag: {e}")
 
+    # ── Legacy rules ─────────────────────────────────────────────────────────
     payload_dict = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    legacy_flags: List[Flag] = []
     for rule in RULES:
         try:
             if evaluate_rule(rule, payload_dict):
                 clause_id = str(rule.get("clause", "")) or ""
                 meta = _lookup_clause_meta(clause_id, hits) or {"source": "legacy-rule"}
-                llm_flags.append(
+                legacy_flags.append(
                     Flag(
                         id=str(rule.get("id", "")),
                         clause=clause_id or (meta.get("label") or "unknown"),
@@ -661,10 +830,186 @@ def analyse(payload: ProjectInput):
         except Exception as e:
             logger.error(f"Error evaluating legacy rule {rule.get('id')}: {e}")
 
+    all_flags: List[Flag] = model_flags + legacy_flags
+
+    # If nothing fired, create GREEN checks so dashboards show positive compliance
+    if not all_flags:
+        all_flags = _synthesise_green_flags(payload, hits)
+
     debug = AnalysisDebug(
         retrieved=hits,
         prompt=f"system:\n{system}\n\nuser:\n{user}",
         raw_response="",
         timings_ms={"retrieval": t_retrieve, "llm": t_llm},
     )
-    return AnalysisOut(flags=llm_flags, debug=debug, corpus_version=POLICY_VERSION)
+    return AnalysisOut(flags=all_flags, debug=debug, corpus_version=POLICY_VERSION)
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Report export (F07 – Should)
+# POST body expects: { "project": ProjectInput, "flags": Flag[] }
+# Renders Markdown → PDF via WeasyPrint if available; falls back to ReportLab.
+# ────────────────────────────────────────────────────────────────────────────────
+def _render_markdown(project: ProjectInput, flags: List[Flag]) -> str:
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    reds = sum(1 for f in flags if f.severity == "red")
+    ambers = sum(1 for f in flags if f.severity == "amber")
+    greens = sum(1 for f in flags if f.severity == "green")
+
+    def risk_label():
+        if reds > 0: return "High"
+        if ambers >= 2: return "Medium"
+        return "Low"
+
+    lines = []
+    lines.append(f"# AI-Impact UK Report – {project.title}")
+    lines.append(f"_Generated: {now}_  \n_Version: {POLICY_VERSION}_")
+    lines.append("")
+    lines.append("## Project")
+    lines.append(f"**Description:** {project.description}")
+    lines.append(f"**Model type:** {project.model_type or '—'}  |  **Env:** {project.deployment_env or '—'}")
+    lines.append("")
+    lines.append(f"## Summary  \n**Risk:** {risk_label()}  |  **Red:** {reds}  **Amber:** {ambers}  **Green:** {greens}")
+    lines.append("")
+    lines.append("## Flags")
+    lines.append("| Severity | Clause | Reason | Mitigation |")
+    lines.append("|---|---|---|---|")
+    for f in flags:
+        clause = (f.meta.get("label") if (f.meta and isinstance(f.meta, dict) and f.meta.get("label")) else f.clause)
+        lines.append(f"| {f.severity.upper()} | {clause} | {f.reason} | {f.mitigation or '—'} |")
+    return "\n".join(lines)
+
+def _markdown_to_pdf(md_text: str) -> bytes:
+    # Try WeasyPrint (Markdown -> HTML -> PDF)
+    try:
+        import markdown as md
+        from weasyprint import HTML
+        html = md.markdown(md_text, extensions=["tables", "fenced_code"])
+        css = """
+        body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+        h1,h2,h3 { margin: 0.4rem 0 0.2rem; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 6px; }
+        th { text-align: left; }
+        """
+        return HTML(string=f"<style>{css}</style>{html}").write_pdf()
+    except Exception as e:
+        logger.info(f"WeasyPrint not available or failed ({e}); falling back to ReportLab.")
+        # Fallback: simple text PDF
+        try:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.units import mm
+        except Exception as e2:
+            raise RuntimeError(f"No PDF backend available: {e2}") from e
+
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        x, y = 20*mm, height - 20*mm
+        for line in md_text.splitlines():
+            if y < 20*mm:
+                c.showPage()
+                y = height - 20*mm
+            c.drawString(x, y, line[:120])
+            y -= 12
+        c.save()
+        return buffer.getvalue()
+
+@app.post("/report/{project_id}")
+def report(project_id: str, body: Dict[str, Any] = Body(...)):
+    try:
+        project = ProjectInput(**(body.get("project") or {}))
+        raw_flags = body.get("flags") or []
+        flags: List[Flag] = [Flag(**f) if isinstance(f, dict) else f for f in raw_flags]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {e}")
+
+    md = _render_markdown(project, flags)
+    try:
+        pdf_bytes = _markdown_to_pdf(md)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    filename = f"AI-Impact-UK_Report_{project_id}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@app.post("/telemetry")
+async def telemetry(req: Request):
+    try:
+        body = await req.json()
+    except Exception:
+        body = {}
+
+    # 1) Consent gate (hard stop)
+    if not bool(body.get("consented", False)):
+        # Do not log anything if not consented
+        return {"ok": False, "reason": "not consented"}
+
+    # 2) Build a content-free, strict whitelist
+    def as_int(x, default=0):
+        try:
+            return int(x)
+        except Exception:
+            return default
+
+    now_iso = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+
+    # Only allow known meta keys (no free text)
+    META_ALLOW = {
+        "projectId",                 # number
+        "modelType",                 # short token, e.g. "classification"
+        "processesPersonalData",     # boolean
+        "hasSpecialCategoryData",    # boolean
+        "format",                    # e.g. "pdf" | "md"
+        "action",                    # optional short token
+    }
+    raw_meta = body.get("meta") or {}
+    meta = {}
+    for k in META_ALLOW:
+        if k in raw_meta:
+            v = raw_meta[k]
+            # normalise booleans/ints/short tokens only
+            if isinstance(v, bool) or v is None:
+                meta[k] = v
+            elif k == "projectId":
+                meta[k] = as_int(v, 0)
+            else:
+                s = str(v)[:32]
+                s = "".join(ch for ch in s if ch.isalnum() or ch in "-_:.")
+                meta[k] = s
+
+    # Safe event token
+    ev = str(body.get("event", ""))[:64].lower()
+    event = "".join(ch for ch in ev if ch.isalnum() or ch in "-_:.") or "unknown"
+
+    # Screen dims (numbers only)
+    scr = body.get("screen") or {}
+    screen = {
+        "w": as_int(scr.get("w"), 0),
+        "h": as_int(scr.get("h"), 0),
+    }
+
+    # Short session token
+    sess = str(body.get("session", ""))[:24]
+    session = "".join(ch for ch in sess if ch.isalnum())
+
+    # Timestamp (client ts if provided, else server time)
+    ts = body.get("ts")
+    if not isinstance(ts, str) or len(ts) > 40:
+        ts = now_iso
+
+    safe = {
+        "event": event,
+        "ts": ts,
+        "projectId": meta.get("projectId", 0),
+        "session": session,
+        "screen": screen,
+        "meta": meta,
+    }
+
+    logger.info(f"Telemetry {json.dumps(safe, ensure_ascii=False)}")
+    return {"ok": True}

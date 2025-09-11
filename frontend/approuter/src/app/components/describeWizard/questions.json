@@ -118,6 +118,13 @@
             "label": "Generative AI risk: hallucination/misuse red-team score > baseline?",
             "options": ["Yes", "No"],
             "required": false
+          },
+          {
+            "id": "pre_deployment_testing",
+            "type": "radio",
+            "label": "Is there documented pre-deployment test & sign-off before go-live?",
+            "options": ["Yes", "No"],
+            "required": false
           }
         ]
       },
@@ -135,6 +142,20 @@
             "id": "T9",
             "type": "textarea",
             "label": "Describe the most severe vulnerability found and its fix.",
+            "required": false
+          },
+          {
+            "id": "access_controls_defined",
+            "type": "radio",
+            "label": "Are access controls & segregation of duties defined and enforced?",
+            "options": ["Yes", "No"],
+            "required": false
+          },
+          {
+            "id": "supply_chain_review",
+            "type": "radio",
+            "label": "Are third-party/OSS dependencies reviewed (e.g., SBOM, CVE alerts)?",
+            "options": ["Yes", "No"],
             "required": false
           }
         ]
@@ -236,11 +257,29 @@
             "label": "Techniques applied",
             "options": ["Pseudonymisation", "Differential privacy", "Fed-learning", "None"],
             "required": false
+          },
+          {
+            "id": "controller_role",
+            "type": "select",
+            "label": "For the personal-data processing, what is your role?",
+            "options": ["Controller", "Processor", "Joint", "Unspecified"],
+            "required": false,
+            "dependsOn": "S16",
+            "showIfValue": "Yes"
+          },
+          {
+            "id": "risk_level",
+            "type": "select",
+            "label": "Overall privacy risk level (for DPIA triage)",
+            "options": ["Low", "Medium", "High"],
+            "required": false,
+            "dependsOn": "S16",
+            "showIfValue": "Yes"
           }
         ]
       },
       {
-        "title": "Safety",
+        "title": "Safety & Oversight",
         "questions": [
           {
             "id": "S18",
@@ -253,6 +292,20 @@
             "type": "checklist",
             "label": "Safety mitigations in place",
             "options": ["Human-in-the-loop", "Kill-switch", "Rate-limits", "Other"],
+            "required": false
+          },
+          {
+            "id": "human_oversight_defined",
+            "type": "radio",
+            "label": "Are explicit human-oversight mechanisms defined (proportionate to risk)?",
+            "options": ["Yes", "No"],
+            "required": false
+          },
+          {
+            "id": "automation_bias_controls_defined",
+            "type": "radio",
+            "label": "Are controls in place to mitigate automation bias?",
+            "options": ["Yes", "No"],
             "required": false
           }
         ]
@@ -279,6 +332,27 @@
             "label": "Bias status",
             "options": ["Passed", "Needs work", "Not yet tested"],
             "required": false
+          }
+        ]
+      },
+      {
+        "title": "Transparency & Labelling",
+        "questions": [
+          {
+            "id": "outputs_exposed_to_end_users",
+            "type": "radio",
+            "label": "Are AI outputs shown to end users or external parties?",
+            "options": ["Yes", "No"],
+            "required": false
+          },
+          {
+            "id": "output_label_includes_probabilistic",
+            "type": "radio",
+            "label": "If yes, are outputs labelled as probabilistic with provenance (model/data)?",
+            "options": ["Yes", "No"],
+            "required": false,
+            "dependsOn": "outputs_exposed_to_end_users",
+            "showIfValue": "Yes"
           }
         ]
       }

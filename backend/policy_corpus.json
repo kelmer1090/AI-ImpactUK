@@ -11,7 +11,7 @@
   {
     "id": "ICO-Audit Accountability-Documentation",
     "label": "ICO-Audit Accountability & Documentation",
-    "text": "You should document and demonstrate how your AI system is compliant and be able to justify the choices you have made across its life‑cycle.",
+    "text": "You should document and demonstrate how your AI system is compliant and be able to justify the choices you have made across its life-cycle.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Accountability",
     "document": "ICO AI Auditing Framework",
@@ -38,7 +38,7 @@
   {
     "id": "ICO-Audit Access-Controls",
     "label": "ICO-Audit Access Controls & Segregation of Duties",
-    "text": "Document access‑management controls and segregation of duties so that changes to AI systems are made and signed off only by authorised personnel, with audit evidence retained.",
+    "text": "Document access-management controls and segregation of duties so that changes to AI systems are made and signed off only by authorised personnel, with audit evidence retained.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Data Governance",
     "document": "ICO AI Auditing Framework",
@@ -56,7 +56,7 @@
   {
     "id": "ICO-Audit Inference-Labeling",
     "label": "ICO-Audit Inference Labelling",
-    "text": "Ensure records clearly mark AI outputs as statistically‑informed guesses rather than facts, including provenance details of the data and model that generated each inference.",
+    "text": "Ensure records clearly mark AI outputs as statistically-informed guesses rather than facts, including provenance details of the data and model that generated each inference.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Transparency",
     "document": "ICO AI Auditing Framework",
@@ -65,7 +65,7 @@
   {
     "id": "ICO-Audit Concept-Drift",
     "label": "ICO-Audit Concept Drift Management",
-    "text": "Define thresholds for acceptable performance degradation, detect drift and retrain the model on new data within timeframes appropriate to the use‑case (e.g. every two years for dynamic recruitment criteria).",
+    "text": "Define thresholds for acceptable performance degradation, detect drift and retrain the model on new data within timeframes appropriate to the use-case (e.g. every two years for dynamic recruitment criteria).",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Reliability",
     "document": "ICO AI Auditing Framework",
@@ -73,8 +73,8 @@
   },
   {
     "id": "ICO-Audit Pre-Deployment-Testing",
-    "label": "ICO-Audit Pre‑deployment Testing",
-    "text": "Maintain a documented policy for pre‑implementation testing and peer review of any AI system or significant change before go‑live, retaining evidence of test results and approvals.",
+    "label": "ICO-Audit Pre-deployment Testing",
+    "text": "Maintain a documented policy for pre-implementation testing and peer review of any AI system or significant change before go-live, retaining evidence of test results and approvals.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Robustness",
     "document": "ICO AI Auditing Framework",
@@ -82,8 +82,8 @@
   },
   {
     "id": "ICO-Audit Supply-Chain-Security",
-    "label": "ICO-Audit Supply‑Chain Security",
-    "text": "Assess security risks in externally‑maintained code and frameworks, subscribe to vulnerability advisories, and enforce secure coding and source‑code review processes.",
+    "label": "ICO-Audit Supply-Chain Security",
+    "text": "Assess security risks in externally-maintained code and frameworks, subscribe to vulnerability advisories, and enforce secure coding and source-code review processes.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Security/Resilience",
     "document": "ICO AI Auditing Framework",
@@ -92,7 +92,7 @@
   {
     "id": "ICO-Audit Isolated-Dev-Env",
     "label": "ICO-Audit Isolated Development Environment",
-    "text": "Mitigate third‑party code risks by developing ML models inside isolated virtual machines or containers, or by converting models into safer languages prior to deployment.",
+    "text": "Mitigate third-party code risks by developing ML models inside isolated virtual machines or containers, or by converting models into safer languages prior to deployment.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Security/Resilience",
     "document": "ICO AI Auditing Framework",
@@ -101,7 +101,7 @@
   {
     "id": "ICO-Audit Security-Risk-Assessment",
     "label": "ICO-Audit Security Risk Assessment",
-    "text": "You must assess and manage AI‑specific security risks – including adversarial attacks and data leakage – adopting measures proportionate to the nature, scope and context of the processing.",
+    "text": "You must assess and manage AI-specific security risks – including adversarial attacks and data leakage – adopting measures proportionate to the nature, scope and context of the processing.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Security/Resilience",
     "document": "ICO AI Auditing Framework",
@@ -110,7 +110,7 @@
   {
     "id": "ICO-Audit Data-Minimisation-Techniques",
     "label": "ICO-Audit Data Minimisation Techniques",
-    "text": "Where large datasets are required, apply privacy‑preserving approaches (e.g., differential privacy, federated learning, synthetic data) to comply with the data minimisation principle while maintaining model utility.",
+    "text": "Where large datasets are required, apply privacy-preserving approaches (e.g., differential privacy, federated learning, synthetic data) to comply with the data minimisation principle while maintaining model utility.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Privacy",
     "document": "ICO AI Auditing Framework",
@@ -119,7 +119,7 @@
   {
     "id": "ICO-Audit Privacy-Attack-Mitigation",
     "label": "ICO-Audit Privacy Attack Mitigation",
-    "text": "Evaluate susceptibility to membership inference, model inversion and other AI‑specific privacy attacks, and put controls in place to prevent disclosure of training data via model outputs.",
+    "text": "Evaluate susceptibility to membership inference, model inversion and other AI-specific privacy attacks, and put controls in place to prevent disclosure of training data via model outputs.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Privacy",
     "document": "ICO AI Auditing Framework",
@@ -127,8 +127,8 @@
   },
   {
     "id": "ICO-Audit Black-Box-Limitations",
-    "label": "ICO-Audit Black‑Box Limitations",
-    "text": "Deploy ‘black‑box’ models only after assessing their impacts, ensuring your organisation can responsibly manage them, and supplementing them with interpretability tools that provide adequate explanations.",
+    "label": "ICO-Audit Black-Box Limitations",
+    "text": "Deploy ‘black-box’ models only after assessing their impacts, ensuring your organisation can responsibly manage them, and supplementing them with interpretability tools that provide adequate explanations.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Explainability",
     "document": "ICO AI Auditing Framework",
@@ -137,7 +137,7 @@
   {
     "id": "ICO-Audit Supplemental-Interpretability",
     "label": "ICO-Audit Supplemental Interpretability",
-    "text": "Complex AI systems must include domain‑appropriate interpretability techniques to support both individual explanations and internal oversight.",
+    "text": "Complex AI systems must include domain-appropriate interpretability techniques to support both individual explanations and internal oversight.",
     "link": "https://ico.org.uk/media/about-the-ico/documents/2619990/guidance-on-the-ai-auditing-framework.pdf",
     "category": "Interpretability",
     "document": "ICO AI Auditing Framework",
@@ -289,8 +289,8 @@
   },
   {
     "id": "DSIT AnnexA Cybersecurity",
-    "label": "Annex A ‑ Cybersecurity guidance",
-    "text": "Regulators should provide guidance on good cybersecurity practices (e.g. NCSC principles for securing machine‑learning models).",
+    "label": "Annex A - Cybersecurity guidance",
+    "text": "Regulators should provide guidance on good cybersecurity practices (e.g. NCSC principles for securing machine-learning models).",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Security/Resilience",
     "document": "DSIT White Paper",
@@ -298,7 +298,7 @@
   },
   {
     "id": "DSIT AnnexA Privacy",
-    "label": "Annex A ‑ Privacy safeguards",
+    "label": "Annex A - Privacy safeguards",
     "text": "Guidance should cover privacy practices such as limiting access to authorised users and safeguarding against bad actors.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Privacy",
@@ -307,8 +307,8 @@
   },
   {
     "id": "DSIT AnnexA Risk-Management",
-    "label": "Annex A ‑ Risk‑management framework",
-    "text": "Regulators should refer AI life‑cycle actors to an appropriate risk‑management framework and require models to be reviewed over time.",
+    "label": "Annex A - Risk-management framework",
+    "text": "Regulators should refer AI life-cycle actors to an appropriate risk-management framework and require models to be reviewed over time.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Robustness",
     "document": "DSIT White Paper",
@@ -316,8 +316,8 @@
   },
   {
     "id": "DSIT AnnexA Safety-Standards",
-    "label": "Annex A ‑ Safety & robustness standards",
-    "text": "Regulators should consider technical standards (e.g. ISO/IEC 24029‑2, 5259 series, TR 5469) to support implementation of risk treatment measures.",
+    "label": "Annex A - Safety & robustness standards",
+    "text": "Regulators should consider technical standards (e.g. ISO/IEC 24029-2, 5259 series, TR 5469) to support implementation of risk treatment measures.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Robustness",
     "document": "DSIT White Paper",
@@ -325,7 +325,7 @@
   },
   {
     "id": "DSIT AnnexA Info-Duties",
-    "label": "Annex A ‑ Information duties",
+    "label": "Annex A - Information duties",
     "text": "AI actors must provide information on the system’s purpose, data (including training data), logic/process, and accountability for outcomes.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Transparency",
@@ -334,8 +334,8 @@
   },
   {
     "id": "DSIT AnnexA Explainability-Reqs",
-    "label": "Annex A ‑ Explainability requirements",
-    "text": "Regulators should set explainability requirements – particularly for higher‑risk systems – balancing enforcement needs and system robustness.",
+    "label": "Annex A - Explainability requirements",
+    "text": "Regulators should set explainability requirements – particularly for higher-risk systems – balancing enforcement needs and system robustness.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Explainability",
     "document": "DSIT White Paper",
@@ -343,7 +343,7 @@
   },
   {
     "id": "DSIT AnnexA Transparency-Standards",
-    "label": "Annex A ‑ Transparency standards",
+    "label": "Annex A - Transparency standards",
     "text": "Regulators should reference standards such as IEEE 7001 and ISO/IEC TS 6254 to support transparency and explainability.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Explainability",
@@ -352,7 +352,7 @@
   },
   {
     "id": "DSIT AnnexA Fairness-Define",
-    "label": "Annex A ‑ Define fairness",
+    "label": "Annex A - Define fairness",
     "text": "Regulators should interpret and articulate ‘fairness’ for their sector or domain and decide where it is relevant.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Fairness",
@@ -361,7 +361,7 @@
   },
   {
     "id": "DSIT AnnexA Fairness-Governance",
-    "label": "Annex A ‑ Fairness governance",
+    "label": "Annex A - Fairness governance",
     "text": "Regulators should design, implement and enforce governance requirements for fairness applicable to regulated entities.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Fairness",
@@ -370,7 +370,7 @@
   },
   {
     "id": "DSIT AnnexA Legal-Justification",
-    "label": "Annex A ‑ Decision justification",
+    "label": "Annex A - Decision justification",
     "text": "Where AI decisions have a legal or similarly significant effect, regulators should consider requiring operators to provide appropriate justification to affected parties.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Managing Bias",
@@ -379,7 +379,7 @@
   },
   {
     "id": "DSIT AnnexA Vulnerable-Users",
-    "label": "Annex A ‑ Protect vulnerable users",
+    "label": "Annex A - Protect vulnerable users",
     "text": "AI systems should comply with rules protecting vulnerable individuals; regulators must consider how AI may alter or intensify user vulnerability.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Diversity & Inclusion",
@@ -388,8 +388,8 @@
   },
   {
     "id": "DSIT AnnexA Bias-Standards",
-    "label": "Annex A ‑ Bias‑mitigation standards",
-    "text": "Regulators should consider standards (e.g. ISO/IEC TR 24027, TR 24368) that address AI fairness and bias‑mitigation.",
+    "label": "Annex A - Bias-mitigation standards",
+    "text": "Regulators should consider standards (e.g. ISO/IEC TR 24027, TR 24368) that address AI fairness and bias-mitigation.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Managing Bias",
     "document": "DSIT White Paper",
@@ -397,7 +397,7 @@
   },
   {
     "id": "DSIT AnnexA Accountability-Assign",
-    "label": "Annex A ‑ Assign accountability",
+    "label": "Annex A - Assign accountability",
     "text": "Regulators should determine who is accountable for compliance with existing regulation and the AI principles.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Accountability",
@@ -406,8 +406,8 @@
   },
   {
     "id": "DSIT AnnexA Governance-Mechanisms",
-    "label": "Annex A ‑ Governance mechanisms",
-    "text": "Regulators should provide guidance on governance mechanisms including risk‑management and reporting processes.",
+    "label": "Annex A - Governance mechanisms",
+    "text": "Regulators should provide guidance on governance mechanisms including risk-management and reporting processes.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Data Governance",
     "document": "DSIT White Paper",
@@ -415,7 +415,7 @@
   },
   {
     "id": "DSIT AnnexA Governance-Standards",
-    "label": "Annex A ‑ Governance standards",
+    "label": "Annex A - Governance standards",
     "text": "Regulators should consider standards (e.g. ISO/IEC 23894, 42001) to maintain accountability within organisations.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Data Governance",
@@ -424,7 +424,7 @@
   },
   {
     "id": "DSIT AnnexA Redress-Guidance",
-    "label": "Annex A ‑ Routes to redress",
+    "label": "Annex A - Routes to redress",
     "text": "Regulators should create or update guidance on where affected parties can direct complaints or disputes about AI harms.",
     "link": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper#annex-a",
     "category": "Accountability",
@@ -437,7 +437,7 @@
     "text": "The organisation shall determine external and internal issues relevant to its purpose that affect its ability to achieve the intended result(s) of its AI management system (AIMS).",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -446,16 +446,16 @@
     "text": "The organisation shall determine the interested parties relevant to the AIMS and the requirements of those parties that are applicable to the AIMS.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 §4.3 Scope",
     "label": "ISO 42001 §4.3 Scope of the AIMS",
-    "text": "The organisation shall determine the boundaries and applicability of the AIMS, taking into account external & internal issues and interested‑party requirements, and shall maintain documented information stating the scope.",
+    "text": "The organisation shall determine the boundaries and applicability of the AIMS, taking into account external & internal issues and interested-party requirements, and shall maintain documented information stating the scope.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -464,16 +464,16 @@
     "text": "Top management shall establish, implement and maintain an AI policy that is appropriate to the purpose of the organisation, includes a commitment to responsible development and use of AI systems and to continual improvement of the AIMS, and is communicated within the organisation and made available to interested parties, as appropriate.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Transparency",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 §6.1 Risk-Opportunities",
     "label": "ISO 42001 §6.1 Actions to address risks & opportunities",
-    "text": "The organisation shall determine AI‑related risks and opportunities that need to be addressed to give assurance that the AIMS can achieve its intended result(s), prevent or reduce undesired impact(s) and achieve continual improvement.",
+    "text": "The organisation shall determine AI-related risks and opportunities that need to be addressed to give assurance that the AIMS can achieve its intended result(s), prevent or reduce undesired impact(s) and achieve continual improvement.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Safety",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -482,7 +482,7 @@
     "text": "The organisation shall establish AI objectives at relevant functions and levels. Objectives shall be measurable (if practicable), monitored, communicated, updated and supported by plans that define responsible parties, resources, timelines and evaluation methods.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -491,7 +491,7 @@
     "text": "The organisation shall determine the competence necessary for those doing work under its control that affects AI performance and reliability, ensure they are competent on the basis of appropriate education, training or experience, and retain documented information as evidence.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Diversity & Inclusion",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -500,7 +500,7 @@
     "text": "Persons doing work under the organisation’s control shall be aware of the AI policy, their contribution to the effectiveness of the AIMS and the implications of not conforming to its requirements.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Transparency",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -509,7 +509,7 @@
     "text": "The AIMS shall include documented information required by this Standard and as determined by the organisation for effectiveness and confidence. Documented information shall be controlled to ensure it is available, suitable and adequately protected.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -518,7 +518,7 @@
     "text": "The organisation shall establish criteria and procedures to ensure data used in AI systems are relevant, representative, accurate, complete and up to date; data lineage shall be documented and quality monitored throughout the AI life cycle.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Data Governance",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -527,7 +527,7 @@
     "text": "The organisation shall plan and control design and development of AI systems, including verification & validation activities to ensure outputs meet input requirements and intended use, with records of reviews and approvals maintained.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accuracy",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -536,16 +536,16 @@
     "text": "Performance of AI systems shall be monitored and measured against planned results at defined intervals; where necessary, corrective actions shall be taken to maintain required accuracy, robustness and reliability.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Reliability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 §8.7 Incident-Management",
     "label": "ISO 42001 §8.7 Incident & change management",
-    "text": "The organisation shall establish processes to identify, report, investigate and act on AI‑related incidents or non‑conformities, including security or safety issues, and control changes to AI systems to prevent unintended consequences.",
+    "text": "The organisation shall establish processes to identify, report, investigate and act on AI-related incidents or non-conformities, including security or safety issues, and control changes to AI systems to prevent unintended consequences.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Security/Resilience",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
@@ -554,160 +554,160 @@
     "text": "The organisation shall conduct internal audits at planned intervals to determine whether the AIMS conforms to the requirements of this Standard and is effectively implemented and maintained.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 §10.1 Corrective-Action",
     "label": "ISO 42001 §10.1 Nonconformity & corrective action",
-    "text": "When a non‑conformity occurs, the organisation shall react to it, evaluate the need for action to eliminate the cause, implement any action needed, review the effectiveness and make changes to the AIMS if necessary.",
+    "text": "When a non-conformity occurs, the organisation shall react to it, evaluate the need for action to eliminate the cause, implement any action needed, review the effectiveness and make changes to the AIMS if necessary.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.2 Data-Quality",
-    "label": "ISO 42001 Annex A 6.2 Data quality",
+    "label": "ISO 42001 Annex A 6.2 Data quality",
     "text": "Controls shall be in place to ensure data used for AI is of sufficient quality, including relevance, representativeness, accuracy, completeness, consistency and timeliness, with responsibilities assigned for data quality assurance.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accuracy",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.5 Robustness-Accuracy",
-    "label": "ISO 42001 Annex A 6.5 Robustness & accuracy of AI systems",
+    "label": "ISO 42001 Annex A 6.5 Robustness & accuracy of AI systems",
     "text": "The organisation shall implement controls to detect, prevent and mitigate errors, faults and unexpected behaviour in AI systems, ensuring robust performance across the intended operating range.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Robustness",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.6 Bias-Fairness",
-    "label": "ISO 42001 Annex A 6.6 Bias & fairness",
-    "text": "Procedures shall exist to identify, assess and mitigate bias in data, models and outcomes, supporting fair and non‑discriminatory AI performance.",
+    "label": "ISO 42001 Annex A 6.6 Bias & fairness",
+    "text": "Procedures shall exist to identify, assess and mitigate bias in data, models and outcomes, supporting fair and non-discriminatory AI performance.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Managing Bias",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.7 Security",
-    "label": "ISO 42001 Annex A 6.7 Security of AI systems",
+    "label": "ISO 42001 Annex A 6.7 Security of AI systems",
     "text": "Security controls shall protect AI systems and assets against threats including adversarial manipulation, model extraction, data poisoning and privacy attacks, maintaining confidentiality, integrity and availability.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Security/Resilience",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.8 Explainability",
-    "label": "ISO 42001 Annex A 6.8 Explainability & interpretability",
+    "label": "ISO 42001 Annex A 6.8 Explainability & interpretability",
     "text": "The organisation shall ensure that explanations of AI system behaviour are available, appropriate for the context and audience, and provide sufficient information for users to understand outputs.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Explainability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.9 Transparency",
-    "label": "ISO 42001 Annex A 6.9 Transparency & traceability",
+    "label": "ISO 42001 Annex A 6.9 Transparency & traceability",
     "text": "Traceability of data, models and decisions shall be maintained; relevant information about the AI system’s purpose, limitations and performance shall be made available to stakeholders.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Transparency",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.10 Privacy",
-    "label": "ISO 42001 Annex A 6.10 Privacy & data protection",
-    "text": "AI development and operation shall comply with applicable data‑protection regulations, applying privacy‑by‑design principles and minimising personal data processing.",
+    "label": "ISO 42001 Annex A 6.10 Privacy & data protection",
+    "text": "AI development and operation shall comply with applicable data-protection regulations, applying privacy-by-design principles and minimising personal data processing.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Privacy",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.11 Safety-Human-Oversight",
-    "label": "ISO 42001 Annex A 6.11 Safety & human oversight",
+    "label": "ISO 42001 Annex A 6.11 Safety & human oversight",
     "text": "AI systems shall include appropriate human oversight mechanisms to prevent or mitigate harms and enable intervention when necessary.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Safety",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.12 Accountability-Roles",
-    "label": "ISO 42001 Annex A 6.12 Accountability & roles",
+    "label": "ISO 42001 Annex A 6.12 Accountability & roles",
     "text": "Roles and responsibilities for AI governance, risk management and compliance shall be defined, assigned and communicated across the organisation.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Accountability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.6.13 Diversity-Inclusion",
-    "label": "ISO 42001 Annex A 6.13 Diversity & inclusion",
+    "label": "ISO 42001 Annex A 6.13 Diversity & inclusion",
     "text": "The organisation shall consider diversity and inclusion throughout the AI life cycle, engaging a diverse range of stakeholders and avoiding exclusionary impacts.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Diversity & Inclusion",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.7 Impact-Assessment",
-    "label": "ISO 42001 Annex A 7 AI system impact assessment",
+    "label": "ISO 42001 Annex A 7 AI system impact assessment",
     "text": "A formal, documented AI system impact assessment shall be performed to identify, evaluate and address impacts on individuals, groups or society arising from AI use.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Safety",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.8 Data-Governance",
-    "label": "ISO 42001 Annex A 8 Data governance",
-    "text": "Controls shall govern data collection, storage, processing and deletion, ensuring compliance with data‑quality requirements and lifecycle policies.",
+    "label": "ISO 42001 Annex A 8 Data governance",
+    "text": "Controls shall govern data collection, storage, processing and deletion, ensuring compliance with data-quality requirements and lifecycle policies.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Data Governance",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.9 Design-Controls",
-    "label": "ISO 42001 Annex A 9 Design & development controls",
+    "label": "ISO 42001 Annex A 9 Design & development controls",
     "text": "Design and development of AI systems shall follow documented processes that incorporate risk assessment, requirements traceability and validation against user needs.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Robustness",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.10 Lifecycle-Operations",
-    "label": "ISO 42001 Annex A 10 AI life‑cycle operations",
+    "label": "ISO 42001 Annex A 10 AI life-cycle operations",
     "text": "Operational controls shall cover deployment, monitoring, maintenance and retirement of AI systems to ensure ongoing reliability and alignment with intended purpose.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Reliability",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.11 Incident-Response",
-    "label": "ISO 42001 Annex A 11 Incident response & remediation",
-    "text": "The organisation shall establish and maintain processes for timely detection, reporting and remediation of AI‑related incidents, with lessons learned feeding back into continual improvement.",
+    "label": "ISO 42001 Annex A 11 Incident response & remediation",
+    "text": "The organisation shall establish and maintain processes for timely detection, reporting and remediation of AI-related incidents, with lessons learned feeding back into continual improvement.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Security/Resilience",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   },
   {
     "id": "ISO 42001 AnnexA A.12 Transparency-Info",
-    "label": "ISO 42001 Annex A 12 Information for transparency",
-    "text": "Information provided to users and stakeholders shall include the AI system’s purpose, capabilities, limitations, performance metrics and any significant risks, enabling informed decision‑making.",
+    "label": "ISO 42001 Annex A 12 Information for transparency",
+    "text": "Information provided to users and stakeholders shall include the AI system’s purpose, capabilities, limitations, performance metrics and any significant risks, enabling informed decision-making.",
     "link": "https://www.iso.org/standard/81259.html",
     "category": "Transparency",
-    "document": "ISO/IEC 42001:2023",
+    "document": "ISO/IEC 42001:2023",
     "framework": "ISO"
   }
 ]

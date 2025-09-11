@@ -1,0 +1,71 @@
+{
+  "title": "Council-Benefit Eligibility Triage",
+  "description": "ML classifier used by a local council to pre-triage benefit applications for manual review. Outputs eligibility likelihood and key drivers; final decisions remain with trained caseworkers.",
+  "sector": "Public sector",
+  "significant_decision": false,
+  "lifecycle_stage": "production",
+
+  "model_type": "Gradient-boosted tree",
+  "deployment_env": "On-prem (council DC)",
+  "data_types": ["Application form", "Transaction history", "Address", "Age"],
+
+  "metrics": "ROC-AUC=0.91; F1=0.84; Calibration error=0.03",
+  "validation_score": 0.84,
+  "domain_threshold_met": true,
+
+  "drift_detection": "PSI on top features + canary alerts; shadow scoring vs. holdout",
+  "retraining_cadence": "Quarterly",
+
+  "robustness_tests": "Stress tests on missing fields/outliers; adversarial spelling; backtesting on economic shocks",
+  "robustness_above_baseline": true,
+  "generative_risk_above_baseline": false,
+
+  "penetration_tested": true,
+  "worst_vuln_fix": "Patched critical CVE in dependency SBOM; rotated service credentials",
+  "safe_mode": "Fallback to full manual review with queue escalation",
+  "mttr_target_hours": 4,
+
+  "sustainability_estimate": "CPU inference; ~0 GPUh; 5,000 kWh annually",
+
+  "explainability_channels": ["Inline text", "UI tooltip", "PDF report", "API"],
+  "explainability_tooling": "SHAP (local + global), feature importances",
+  "interpretability_rating": "4",
+  "key_features": "Income, dependents, prior claims, residency duration, council tax band",
+
+  "processes_personal_data": true,
+  "special_category_data": false,
+  "privacy_techniques": ["Pseudonymisation", "Differential privacy (aggregates)"],
+  "controller_role": "Controller",
+  "risk_level": "Low",
+
+  "credible_harms": [
+    "Wrong denial of benefits → financial hardship",
+    "Approving ineligible claim → public funds misuse"
+  ],
+  "safety_mitigations": ["Human-in-the-loop", "Appeals process", "Rate-limits", "Kill-switch"],
+
+  "bias_tests": "Equal opportunity & demographic parity monitored monthly; intersectional slices",
+  "bias_status": "Passed",
+
+  "fairness_definition": ["Group"],
+  "fairness_stakeholders": "Citizens Advice group; DPO; service managers",
+  "accountable_owner": "Alex Patel (Head of Data)",
+  "escalation_route": "benefits@council.gov.uk",
+  "model_cards_published": true,
+  "documentation_consumers": ["Public", "Regulators", "Internal"],
+
+  "outputs_exposed_to_end_users": true,
+  "output_label_includes_probabilistic": true,
+
+  "lineage_doc_present": true,
+  "retention_defined": true,
+  "diversity_steps": "Oversampled under-represented age groups; stratified validation",
+  "community_reviews": true,
+
+  "human_oversight_defined": true,
+  "automation_bias_controls_defined": true,
+
+  "pre_deployment_testing": true,
+  "access_controls_defined": true,
+  "supply_chain_review": true
+}

@@ -1,195 +1,349 @@
 # backend/rules.yaml
+# backend/rules.yaml
+# Notes:
+# - `clause` MUST match an ID in backend/policy_corpus.json (exported from frontend policyMap).
+# - `meta.phase` ∈ {data, model, deployment} for your RAG-by-phase.
+# - `meta.dimension` ∈ {privacy, fairness, bias, robustness, security, reliability, explainability, transparency, accountability, safety, data-governance}
+# - Triggers map to your intake fields; keep names stable with mapWizardAnswersToApi.ts.
+
 rules:
+
+  # ───── Project hygiene / context ─────────────────────────────────────────────
   - id: description-too-short
-    clause: "Clause 1.1"
+    clause: "ISO 42001 §7.5 Documented-Information"
     severity: "red"
     reason: "Project narrative is too short; insufficient information to evaluate risk properly."
-    mitigation: "Provide a fuller description including purpose, data processed, deployment context, and safeguards."
+    mitigation: "Provide a fuller description including purpose, data processed, deployment context, stakeholders and safeguards."
+    meta: { framework: "ISO", phase: "data", dimension: "accountability" }
     trigger:
-      description_min_length: 150  # custom logic: length of P1
+      description_min_length: 150
 
   - id: missing-project-title
-    clause: "Clause 1.2"
+    clause: "ISO 42001 §4.3 Scope"
     severity: "amber"
-    reason: "Project name is missing."
-    mitigation: "Give the project a concise, descriptive title."
+    reason: "Project name/scope is missing, making traceability and governance difficult."
+    mitigation: "Add a concise project title and scoped description (in/out of scope, boundaries, interfaces)."
+    meta: { framework: "ISO", phase: "data", dimension: "accountability" }
     trigger:
       title_missing: true
 
-  - id: uses-classification-model
-    clause: "Clause 2.3"
+  - id: accountable-owner-missing
+    clause: "ISO 42001 AnnexA A.6.12 Accountability-Roles"
     severity: "amber"
-    reason: "Classification models can have significant impact on individuals, especially if used for decisions."
-    mitigation: "Ensure fairness and explainability assessments are in place."
+    reason: "No named accountable owner for AI outcomes."
+    mitigation: "Assign and document a responsible owner; define RACI for decisions and changes."
+    meta: { framework: "ISO", phase: "data", dimension: "accountability" }
     trigger:
-      model_type: ["Tabular ML", "Classification"]  # adapt if you normalize naming
+      accountable_owner_missing: true
 
-  - id: uses-llm-foundation-model
-    clause: "Clause 2.5"
+  # ───── Data protection / DPIA / controller-processor ────────────────────────
+  - id: dpia-required-not-planned
+    clause: "ICO-Audit DPIA-Requirement"
+    severity: "red"
+    reason: "Personal data with likely high risk is processed but no DPIA is planned."
+    mitigation: "Plan and complete a DPIA; if residual high risk remains, consult the ICO before processing."
+    meta: { framework: "ICO", phase: "data", dimension: "privacy" }
+    trigger:
+      processes_personal_data: true
+      risk_level: ["high"]
+
+  - id: controller-processor-determination-missing
+    clause: "ICO-Audit Controller-Processor-Determination"
     severity: "amber"
-    reason: "Large language / foundation models can amplify hallucination and downstream risk."
-    mitigation: "Apply prompt monitoring, output validation, and guardrails."
+    reason: "Controller/processor role not determined for the processing operations."
+    mitigation: "Determine role(s) for each processing activity and adapt contracts and responsibilities accordingly."
+    meta: { framework: "ICO", phase: "data", dimension: "accountability" }
     trigger:
-      model_type: ["LLM"]
+      controller_role: ["", "unspecified", "unknown"]
 
-  - id: no-data-types-specified
-    clause: "Clause 3.2"
-    severity: "green"
-    reason: "No sector/data types declared; defaulting to minimal data footprint."
-    mitigation: null
+  - id: retention-not-defined
+    clause: "ISO 42001 §8.2 Data-Management"
+    severity: "amber"
+    reason: "Data retention schedule not defined."
+    mitigation: "Define retention periods and purge processes for each dataset; align to ICO guidance."
+    meta: { framework: "ISO", phase: "data", dimension: "privacy" }
     trigger:
-      data_types: []  # match when empty
+      retention_not_defined: true
 
   - id: processes-special-category-data
-    clause: "Clause 4.1"
+    clause: "ICO-Audit Privacy-Attack-Mitigation"
     severity: "red"
-    reason: "System processes special-category personal data which carries higher legal sensitivity."
-    mitigation: "Ensure lawful basis, explicit consent where required, and extra safeguards (e.g., minimisation, access controls)."
+    reason: "Special-category personal data increases privacy risk, requiring stronger controls."
+    mitigation: "Confirm lawful basis and necessity; apply privacy-preserving techniques and stricter access controls."
+    meta: { framework: "ICO", phase: "data", dimension: "privacy" }
     trigger:
-      special_category_data: true  # custom: derived from S16a includes "Special-category"
+      special_category_data: true
 
   - id: privacy-techniques-missing
-    clause: "Clause 4.2"
+    clause: "ICO-Audit Data-Minimisation-Techniques"
     severity: "amber"
     reason: "Personal data is processed but privacy-preserving techniques are not applied."
-    mitigation: "Consider applying pseudonymisation, differential privacy or federated learning."
+    mitigation: "Use pseudonymisation, DP, FL, or synthetic data; restrict access and log uses."
+    meta: { framework: "ICO", phase: "data", dimension: "privacy" }
     trigger:
-      processes_personal_data: true  # from S16 == "Yes"
-      privacy_techniques: []        # from S17 missing or contains "None"
+      processes_personal_data: true
+      privacy_techniques: []
 
-  - id: explainability-tooling-missing
-    clause: "Clause 5.1"
+  # ───── Security & supply chain ──────────────────────────────────────────────
+  - id: access-controls-missing
+    clause: "ICO-Audit Access-Controls"
     severity: "amber"
-    reason: "No explainability tooling specified."
-    mitigation: "Integrate established tools (e.g., SHAP, LIME) or document custom explanation logic."
+    reason: "Access controls and segregation of duties are not defined."
+    mitigation: "Implement RBAC, MFA, change controls, and approvals with audit evidence."
+    meta: { framework: "ICO", phase: "deployment", dimension: "security" }
     trigger:
-      explainability_tooling_missing: true  # custom: S13 empty while impact context suggests explanation needed
+      access_controls_defined: false
 
-  - id: interpretability-unrated
-    clause: "Clause 5.2"
-    severity: "green"
-    reason: "Interpretability not explicitly rated."
-    mitigation: "Consider collecting a stakeholder rating to understand model transparency."
-    trigger:
-      interpretability_not_rated: true  # custom: S14 absent
-
-  - id: fairness-definition-missing
-    clause: "Clause 6.1"
+  - id: supply-chain-security-missing
+    clause: "ICO-Audit Supply-Chain-Security"
     severity: "amber"
-    reason: "No fairness definition selected; unclear what fairness means for this use-case."
-    mitigation: "Choose or define a fairness definition aligned to product goals (group, individual, counterfactual, etc.)."
+    reason: "Third-party and open-source dependencies are not assessed for security risk."
+    mitigation: "Adopt supplier review, SBOMs, vulnerability alerts, and secure coding standards."
+    meta: { framework: "ICO", phase: "deployment", dimension: "security" }
     trigger:
-      fairness_definition_missing: true  # custom: G23 empty
-
-  - id: no-accountable-owner
-    clause: "Clause 6.2"
-    severity: "amber"
-    reason: "No named accountable owner."
-    mitigation: "Assign and document a responsible owner for AI system outcomes."
-    trigger:
-      accountable_owner_missing: true  # custom: G25 empty
-
-  - id: model-cards-not-published
-    clause: "Clause 7.1"
-    severity: "amber"
-    reason: "Model/system card publication not planned."
-    mitigation: "Publish model cards or system cards to increase transparency to users and regulators."
-    trigger:
-      model_cards_published: false  # custom: G27 == "No"
-
-  - id: safety-mitigations-missing-despite-harm
-    clause: "Clause 8.1"
-    severity: "red"
-    reason: "Potential harms enumerated but no safety mitigations are in place."
-    mitigation: "Implement safety controls like human-in-the-loop, kill-switches, rate-limits, or other appropriate mechanisms."
-    trigger:
-      credible_harms_listed: true   # custom: S18 non-empty
-      safety_mitigations: []        # custom: S19 empty
-
-  - id: lack-of-drift-monitoring
-    clause: "Clause 9.1"
-    severity: "amber"
-    reason: "No strategy described for detecting model drift."
-    mitigation: "Establish monitoring to surface drift and trigger retraining or alerts."
-    trigger:
-      drift_detection_missing: true  # custom: T4 empty
-
-  - id: low-retraining-cadence
-    clause: "Clause 9.2"
-    severity: "green"
-    reason: "Retraining cadence is infrequent or unspecified."
-    mitigation: "Assess whether the retraining cadence matches the rate of distributional change."
-    trigger:
-      retraining_cadence: ["N/A", "On-demand"]  # caution: may need more nuanced logic
+      supply_chain_review: false
 
   - id: no-penetration-testing
-    clause: "Clause 10.1"
+    clause: "ISO 42001 AnnexA A.6.7 Security"
     severity: "amber"
-    reason: "No penetration or red-team testing reported."
-    mitigation: "Conduct security testing to uncover vulnerabilities before deployment."
+    reason: "No penetration / red-team testing reported."
+    mitigation: "Conduct security testing pre-release and at major changes; track remediation."
+    meta: { framework: "ISO", phase: "deployment", dimension: "security" }
     trigger:
-      pen_test_missing: true  # custom: T8 == "No"
+      pen_test_missing: true
 
+  # ───── Model performance / robustness / drift ───────────────────────────────
   - id: domain-threshold-not-met
-    clause: "Clause 2.1"
+    clause: "ISO 42001 §8.3 Design-Development"
     severity: "amber"
-    reason: "Domain minimum performance threshold not met."
-    mitigation: "Halt deployment until the domain threshold is achieved or revise requirements with stakeholders."
+    reason: "Minimum domain performance threshold not met."
+    mitigation: "Hold deployment; refine data/features and requirements; obtain stakeholder sign-off."
+    meta: { framework: "ISO", phase: "model", dimension: "accuracy" }
     trigger:
       domain_threshold_not_met: true
 
   - id: robustness-below-baseline
-    clause: "Clause 2.2"
+    clause: "ISO 42001 AnnexA A.6.5 Robustness-Accuracy"
     severity: "amber"
     reason: "Robustness below baseline on stress/adversarial tests."
-    mitigation: "Add adversarial training or hardening; address failing tests before promotion."
+    mitigation: "Add adversarial evaluation/hardening; fix failing tests prior to promotion."
+    meta: { framework: "ISO", phase: "model", dimension: "robustness" }
     trigger:
       robustness_below_baseline: true
 
-  - id: genai-risk-above-baseline
-    clause: "Clause 2.5"
+  - id: lack-of-drift-monitoring
+    clause: "ICO-Audit Concept-Drift"
     severity: "amber"
-    reason: "Generative AI hallucination/misuse risk above baseline."
-    mitigation: "Introduce retrieval-augmented validation, output filters, and usage guardrails; expand red-team coverage."
+    reason: "No strategy to detect and respond to concept/data drift."
+    mitigation: "Define drift thresholds; implement monitoring and retraining triggers."
+    meta: { framework: "ICO", phase: "deployment", dimension: "reliability" }
+    trigger:
+      drift_detection_missing: true
+
+  - id: low-retraining-cadence
+    clause: "ISO 42001 §8.5 Performance-Monitoring"
+    severity: "green"
+    reason: "Retraining cadence is infrequent/unspecified; track accuracy against planned results."
+    mitigation: "Align cadence with observed drift and risk; automate alerts."
+    meta: { framework: "ISO", phase: "deployment", dimension: "reliability" }
+    trigger:
+      retraining_cadence: ["N/A", "On-demand"]
+
+  - id: pre-deployment-testing-missing
+    clause: "ICO-Audit Pre-Deployment-Testing"
+    severity: "amber"
+    reason: "No documented pre-implementation testing policy or approvals."
+    mitigation: "Introduce test plan, peer review, sign-off, and evidence retention before go-live."
+    meta: { framework: "ICO", phase: "model", dimension: "robustness" }
+    trigger:
+      pre_deployment_testing: false
+
+  # ───── GenAI specifics ─────────────────────────────────────────────────────
+  - id: uses-llm-foundation-model
+    clause: "DSIT §3.2.3 Safety"
+    severity: "amber"
+    reason: "Foundation/LLM use can amplify hallucination and misuse risks."
+    mitigation: "Add retrieval/validation, guardrails, abuse monitoring, and safe-output filters."
+    meta: { framework: "DSIT", phase: "model", dimension: "safety" }
+    trigger:
+      model_type: ["LLM", "Foundation Model"]
+
+  - id: genai-risk-above-baseline
+    clause: "DSIT AnnexA Risk-Management"
+    severity: "amber"
+    reason: "Generative-AI hallucination/misuse risk assessed above baseline."
+    mitigation: "Expand RAG validation, prompt hygiene, rate-limits, and red-team coverage."
+    meta: { framework: "DSIT", phase: "deployment", dimension: "robustness" }
     trigger:
       genai_risk_above_baseline: true
 
-  - id: explainability-channels-missing
-    clause: "Clause 5.1"
+  - id: inference-labelling-missing
+    clause: "ICO-Audit Inference-Labeling"
     severity: "amber"
-    reason: "No clear channels for surfacing explanations to users/auditors."
-    mitigation: "Provide at least one of: inline text, UI tooltips, API endpoint, or downloadable report."
+    reason: "AI outputs exposed to users aren’t labelled as probabilistic with provenance."
+    mitigation: "Label outputs as probabilistic; include model/data provenance and limitations."
+    meta: { framework: "ICO", phase: "deployment", dimension: "transparency" }
+    trigger:
+      outputs_exposed_to_end_users: true
+      output_label_includes_probabilistic: false
+
+  # ───── Fairness / bias / inclusion ──────────────────────────────────────────
+  - id: fairness-definition-missing
+    clause: "DSIT AnnexA Fairness-Define"
+    severity: "amber"
+    reason: "No fairness definition selected; unclear fairness targets."
+    mitigation: "Choose/define fairness metrics aligned to the use-case (group, individual, counterfactual)."
+    meta: { framework: "DSIT", phase: "model", dimension: "fairness" }
+    trigger:
+      fairness_definition_missing: true
+
+  - id: fairness-monitoring-missing
+    clause: "ICO-Audit Algorithmic-Fairness-Monitoring"
+    severity: "amber"
+    reason: "No regular bias monitoring documented."
+    mitigation: "Adopt appropriate fairness metrics and review cadence; record corrective actions."
+    meta: { framework: "ICO", phase: "deployment", dimension: "bias" }
+    trigger:
+      fairness_monitoring_defined: false
+
+  - id: diversity-attestation-missing
+    clause: "ICO-Audit Diversity-Attestation"
+    severity: "amber"
+    reason: "No attestation that training/test data is diverse and representative."
+    mitigation: "Introduce dataset diversity attestation and dataset shift checks."
+    meta: { framework: "ICO", phase: "data", dimension: "bias" }
+    trigger:
+      data_diversity_attested: false
+
+  - id: community-reviews-missing
+    clause: "ISO 42001 AnnexA A.6.13 Diversity-Inclusion"
+    severity: "amber"
+    reason: "No community or affected-party review despite potential impact."
+    mitigation: "Schedule engagement with affected groups; document feedback loop."
+    meta: { framework: "ISO", phase: "deployment", dimension: "safety" }
+    trigger:
+      community_reviews_missing_for_personal_data: true
+
+  # ───── Transparency / explainability ────────────────────────────────────────
+  - id: explainability-tooling-missing
+    clause: "ICO-Audit Supplemental-Interpretability"
+    severity: "amber"
+    reason: "No interpretability tooling documented for complex models."
+    mitigation: "Integrate SHAP/LIME or domain methods; validate with intended audiences."
+    meta: { framework: "ICO", phase: "model", dimension: "explainability" }
+    trigger:
+      explainability_tooling_missing: true
+
+  - id: explainability-channels-missing
+    clause: "ISO 42001 AnnexA A.12 Transparency-Info"
+    severity: "amber"
+    reason: "No clear channels to surface explanations to users/auditors."
+    mitigation: "Provide inline text, UI tooltips, API endpoint, or downloadable report."
+    meta: { framework: "ISO", phase: "deployment", dimension: "transparency" }
     trigger:
       explainability_channels_missing: true
 
   - id: transparency-audience-missing
-    clause: "Clause 7.2"
+    clause: "DSIT AnnexA Info-Duties"
     severity: "amber"
-    reason: "Planned documentation does not include any external audience."
-    mitigation: "Plan model/system cards for customers or public where appropriate; add regulator-facing documentation."
+    reason: "Planned documentation doesn’t include any external audience."
+    mitigation: "Plan transparency artefacts for customers/public as appropriate; include regulator-facing docs."
+    meta: { framework: "DSIT", phase: "deployment", dimension: "transparency" }
     trigger:
       documentation_consumers_includes: ["public", "customers", "regulators"]
 
-  - id: retention-not-defined
-    clause: "Clause 4.3"
+  - id: model-cards-not-planned
+    clause: "DSIT AnnexA Transparency-Standards"
     severity: "amber"
-    reason: "Data retention schedule not defined."
-    mitigation: "Define retention period and purge/process for each dataset, aligned to ICO guidance."
+    reason: "Model/system cards or equivalent transparency artefacts not planned."
+    mitigation: "Publish model/system cards referencing ISO/IEC/IEEE transparency standards where applicable."
+    meta: { framework: "DSIT", phase: "deployment", dimension: "transparency" }
     trigger:
-      retention_not_defined: true
+      model_cards_published: false
 
+  # ───── Human oversight / Article 22 / safety ────────────────────────────────
+  - id: human-oversight-missing
+    clause: "ISO 42001 AnnexA A.6.11 Safety-Human-Oversight"
+    severity: "amber"
+    reason: "No explicit human oversight mechanisms proportionate to risk."
+    mitigation: "Add reviewer training, escalation paths, kill-switches, HITL checkpoints."
+    meta: { framework: "ISO", phase: "deployment", dimension: "safety" }
+    trigger:
+      human_oversight_defined: false
+
+  - id: article22-classification-unclear
+    clause: "ICO-Audit Article22-Classification"
+    severity: "amber"
+    reason: "It’s unclear whether decisions are solely automated or subject to meaningful human review."
+    mitigation: "Classify decision type; ensure safeguards and challenge routes for solely automated decisions."
+    meta: { framework: "ICO", phase: "deployment", dimension: "accountability" }
+    trigger:
+      solely_automated_decisions: "unspecified"
+
+  - id: automation-bias-controls-missing
+    clause: "ICO-Audit Automation-Bias"
+    severity: "amber"
+    reason: "Controls to mitigate automation bias are not described."
+    mitigation: "Introduce reviewer prompts, interpretability views, and challenge-requirements."
+    meta: { framework: "ICO", phase: "deployment", dimension: "safety" }
+    trigger:
+      automation_bias_controls_defined: false
+
+  - id: risk-mitigation-not-defined
+    clause: "ICO-Audit Risk-Assessment"
+    severity: "amber"
+    reason: "Risks to rights and freedoms identified but mitigation actions are not documented."
+    mitigation: "Implement proportional controls; be prepared to halt deployment if risks cannot be managed."
+    meta: { framework: "ICO", phase: "deployment", dimension: "safety" }
+    trigger:
+      risks_identified: true
+      mitigation_plan_defined: false
+
+  # ───── Logging / traceability ───────────────────────────────────────────────
+  - id: traceability-logging-missing
+    clause: "ISO 42001 AnnexA A.6.9 Transparency"
+    severity: "amber"
+    reason: "Data/model/decision traceability is not documented."
+    mitigation: "Implement lineage logging, versioning, approvals, and decision logs."
+    meta: { framework: "ISO", phase: "deployment", dimension: "transparency" }
+    trigger:
+      traceability_logging_defined: false
+
+  # ───── Sustainability (informational) ───────────────────────────────────────
   - id: sustainability-estimate-missing
-    clause: "Clause 11.1"
+    clause: "ISO 42001 §6.2 AI-Objectives"
     severity: "green"
-    reason: "No sustainability (GPU·h / kWh) estimate provided."
-    mitigation: "Record annualised compute and energy to support efficiency reviews."
+    reason: "No compute/energy estimate provided; collecting this improves cost/risk monitoring."
+    mitigation: "Record annualised GPU-hours/kWh to support efficiency reviews and objectives."
+    meta: { framework: "ISO", phase: "model", dimension: "accountability" }
     trigger:
       sustainability_estimate_missing: true
 
-  - id: community-reviews-missing
-    clause: "Clause 6.3"
+  # ───── Defaults from your original file kept for compatibility ─────────────
+  - id: uses-classification-model
+    clause: "ICO-Audit Algorithmic-Fairness-Monitoring"
     severity: "amber"
-    reason: "No inclusion/community review despite using personal data."
-    mitigation: "Schedule engagement or review with affected communities and document feedback."
+    reason: "Classification models can impact individuals; fairness and explainability oversight needed."
+    mitigation: "Define fairness metrics, monitor disparities, and expose suitable explanations."
+    meta: { framework: "ICO", phase: "model", dimension: "fairness" }
     trigger:
-      community_reviews_missing_for_personal_data: true
+      model_type: ["Tabular ML", "Classification"]
+
+  - id: no-data-types-specified
+    clause: "DSIT AnnexA Governance-Mechanisms"
+    severity: "green"
+    reason: "No data types declared; defaulting to a minimal data footprint assumption."
+    mitigation: null
+    meta: { framework: "DSIT", phase: "data", dimension: "data-governance" }
+    trigger:
+      data_types: []
+
+  - id: safety-mitigations-missing-despite-harm
+    clause: "ISO 42001 AnnexA A.6.11 Safety-Human-Oversight"
+    severity: "red"
+    reason: "Potential harms enumerated but no safety mitigations or escalation controls are in place."
+    mitigation: "Add HITL, kill-switches, rate-limits, abuse monitoring; define on-call and rollback."
+    meta: { framework: "ISO", phase: "deployment", dimension: "safety" }
+    trigger:
+      credible_harms_listed: true
+      safety_mitigations: []

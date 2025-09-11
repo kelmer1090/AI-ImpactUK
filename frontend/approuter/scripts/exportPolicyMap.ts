@@ -12,6 +12,8 @@ type RawClause = {
   category?: string;
   document?: string;
   framework?: string;
+  phase?: "data" | "model" | "deployment" | string;
+  dimension?: "accuracy" | "robustness" | "bias" | "privacy" | "security" | "reliability" | "explainability" | "resilience" | string;
 };
 
 type ExportClause = {
@@ -22,6 +24,8 @@ type ExportClause = {
   category?: string;
   document?: string;
   framework: "DSIT" | "ICO" | "ISO";
+  phase?: string;
+  dimension?: string;
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,6 +64,8 @@ function normalize(prefix: "DSIT" | "ICO" | "ISO", raw: RawClause[]): ExportClau
       category: r.category || undefined,
       document: r.document || undefined,
       framework: normFramework(r.framework, prefix) as ExportClause["framework"],
+      phase: r.phase || undefined,
+      dimension: r.dimension || undefined,
     }));
 }
 
@@ -87,6 +93,8 @@ if (!dsitRaw.length && !icoRaw.length && !isoRaw.length) {
         | "DSIT"
         | "ICO"
         | "ISO",
+      phase: v?.phase || undefined,
+      dimension: v?.dimension || undefined,
     }))
     .filter((r) => r.text.trim().length > 0);
 } else {
@@ -101,7 +109,7 @@ if (!merged.length) {
   process.exit(1);
 }
 
-// >>> FIXED: go up THREE levels from /frontend/approuter/scripts to repo root, then into /backend
+// Go up THREE levels from /frontend/approuter/scripts to repo root, then into /backend
 const projectRoot = path.resolve(__dirname, "../../..");
 const backendPath = path.join(projectRoot, "backend");
 if (!existsSync(backendPath)) {

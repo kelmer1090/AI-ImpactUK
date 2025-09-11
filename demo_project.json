@@ -1,0 +1,53 @@
+{
+  "title": "AI-Doctor Triage Assistant",
+  "description": "NLP chatbot deployed in NHS call centres to triage patients based on reported symptoms, providing urgency scores and recommended next steps. NLP chatbot deployed in NHS call centres to triage patients based on reported symptoms, providing urgency scores and recommended next steps. NLP chatbot deployed in NHS call centres to triage patients based on reported symptoms, providing urgency scores and recommended next steps.",
+  "sector": "Health",
+  "significant_decision": true,
+  "lifecycle_stage": "Pilot",
+  "model_type": "LLM",
+  "deployment_env": "Cloud (NHS secure tenant)",
+  "data_types": ["Symptoms", "Patient history", "Free text"],
+
+  "metrics": "F1, Recall@5",
+  "validation_score": 0.72,
+  "domain_threshold_met": false,
+  "robustness_tests": "Prompt-injection, adversarial spelling perturbations",
+  "robustness_above_baseline": false,
+  "generative_risk_above_baseline": true,
+  "drift_detection": "KL divergence on symptom distribution",
+  "retraining_cadence": "Monthly",
+  "penetration_tested": true,
+  "worst_vuln_fix": "Prompt injection enabling skip-triage shortcut",
+  "safe_mode": "Fallback to human nurse escalation",
+  "mttr_target_hours": 12,
+  "sustainability_estimate": "5000 GPU·h; 8000 kWh annually",
+
+  "explainability_channels": ["PDF report", "UI tooltip"],
+  "explainability_tooling": "SHAP",
+  "interpretability_rating": "2",
+  "key_features": "Symptom frequency, urgency keywords, age group",
+  "processes_personal_data": true,
+  "special_category_data": true,
+  "privacy_techniques": ["Pseudonymisation", "Differential privacy"],
+
+  "credible_harms": [
+    "Missed critical diagnosis → death",
+    "Mis-escalation → ambulance misuse"
+  ],
+  "safety_mitigations": ["Human-in-the-loop", "Kill-switch"],
+
+  "bias_tests": "Equal opportunity",
+  "bias_status": "Needs work",
+
+  "fairness_definition": ["Group", "Counterfactual"],
+  "fairness_stakeholders": "Patient advocacy groups",
+  "accountable_owner": "Dr. Jane Smith (Clinical Safety Officer, NHS)",
+  "escalation_route": "complaints@nhs.uk",
+  "model_cards_published": true,
+  "documentation_consumers": ["Public", "Regulators", "Internal"],
+
+  "lineage_doc_present": true,
+  "retention_defined": true,
+  "diversity_steps": "Recruiting annotators across demographics",
+  "community_reviews": true
+}

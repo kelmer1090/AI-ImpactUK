@@ -34,13 +34,6 @@ const asNum = (v: any): number | null => {
 /**
  * Map the multi-step wizard answers (IDs from questions.json)
  * into the POST /api/analyse payload (ProjectInput + extras).
- *
- * Supported IDs:
- * - Narrative: project_title, P1..P5
- * - Technical: T1..T12
- * - Socio-Technical: S12..S22
- * - Guiding Principles: G23..G28
- * - “Plus” Topics: P29..P32
  */
 export function mapWizardAnswersToApi(ans: Answers) {
   /* Project narrative */
@@ -51,35 +44,27 @@ export function mapWizardAnswersToApi(ans: Answers) {
 
   const description = String(ans.P1 ?? ans.description ?? "").trim();
 
-  const sector = ans.P2 ?? null; // for retrieval only (not stored now)
-  const significant_decision =
-    ans.P3 != null ? asBool(ans.P3) : undefined; // retrieval flag
+  const sector = ans.P2 ?? null;
+  const significant_decision = ans.P3 != null ? asBool(ans.P3) : undefined;
 
-  const lifecycle_stage = ans.P4 ?? null; // retrieval signal
+  const lifecycle_stage = ans.P4 ?? null;
 
-  // Primary model family — align to backend "model_type"
   const model_type = ans.model_type ?? ans.modelType ?? ans.P5 ?? null;
-
-  // We don't currently have a field for deployment env in the wizard
   const deployment_env = ans.deployment_env ?? ans.deploymentEnv ?? null;
 
-  // data_types (placeholder; if you add a control later it will land here)
   const data_types = asCsvArray(ans.data_types ?? ans.dataTypes ?? []);
 
   /* Technical */
   const metrics = String(ans.T1 ?? "").trim() || undefined;
-  const validation_score = asNum(ans.T2); // number if provided
-  const domain_threshold_met =
-    ans.T3 != null ? asBool(ans.T3) : undefined;
+  const validation_score = asNum(ans.T2);
+  const domain_threshold_met = ans.T3 != null ? asBool(ans.T3) : undefined;
 
   const drift_detection = ans.drift_detection ?? ans.T4 ?? null;
   const retraining_cadence = ans.retraining_cadence ?? ans.T5 ?? null;
 
   const robustness_tests = String(ans.T6 ?? "").trim() || undefined;
-  const robustness_above_baseline =
-    ans.T7 != null ? asBool(ans.T7) : undefined;
+  const robustness_above_baseline = ans.T7 != null ? asBool(ans.T7) : undefined;
 
-  // NEW: GenAI risk
   const generative_risk_above_baseline =
     ans.T7b != null ? asBool(ans.T7b) : undefined;
 
@@ -91,20 +76,26 @@ export function mapWizardAnswersToApi(ans: Answers) {
       : false;
 
   const worst_vuln_fix = String(ans.T9 ?? "").trim() || undefined;
-
   const safe_mode = String(ans.T10 ?? "").trim() || undefined;
   const mttr_target_hours = asNum(ans.T11);
 
-  // NEW: Sustainability estimate (keep as string for now)
   const sustainability_estimate =
     ans.T12 != null ? String(ans.T12) : undefined;
+
+  // Additional robustness/security triggers
+  const pre_deployment_testing =
+    ans.pre_deployment_testing != null ? asBool(ans.pre_deployment_testing) : undefined;
+  const access_controls_defined =
+    ans.access_controls_defined != null ? asBool(ans.access_controls_defined) : undefined;
+  const supply_chain_review =
+    ans.supply_chain_review != null ? asBool(ans.supply_chain_review) : undefined;
 
   /* Socio-Technical */
   const explainability_channels = asCsvArray(ans.S12 ?? []);
   const explainability_tooling =
     ans.explainability_tooling ??
     ans.explainabilityTooling ??
-    (ans.S13 != null ? String(ans.S13) : null); // e.g., "SHAP, LIME, custom"
+    (ans.S13 != null ? String(ans.S13) : null);
 
   const interpretability_rating =
     ans.interpretability_rating ??
@@ -131,14 +122,28 @@ export function mapWizardAnswersToApi(ans: Answers) {
     ans.privacy_techniques ?? ans.privacyTechniques ?? ans.S17 ?? [],
   );
 
+  // Role + DPIA risk level (strings; rules compare case-insensitively)
+  const controller_role =
+    typeof ans.controller_role === "string" ? ans.controller_role.trim() : ans.controller_role ?? null;
+  const risk_level =
+    typeof ans.risk_level === "string" ? ans.risk_level.trim() : ans.risk_level ?? null;
+
   // Safety
   const credible_harms = asCsvArray(ans.credible_harms ?? ans.S18 ?? []);
   const safety_mitigations = asCsvArray(ans.safety_mitigations ?? ans.S19 ?? []);
 
   // Bias
-  const bias_evidence = (ans.S20 as File | string | undefined) ?? undefined; // UI may pass a File or link
-  const bias_tests = ans.S21 ?? null; // single-select string
-  const bias_status = ans.S22 ?? null; // radio string
+  const bias_evidence = (ans.S20 as File | string | undefined) ?? undefined;
+  const bias_tests = ans.S21 ?? null;
+  const bias_status = ans.S22 ?? null;
+
+  // Transparency & labelling triggers
+  const outputs_exposed_to_end_users =
+    ans.outputs_exposed_to_end_users != null ? asBool(ans.outputs_exposed_to_end_users) : undefined;
+  const output_label_includes_probabilistic =
+    ans.output_label_includes_probabilistic != null
+      ? asBool(ans.output_label_includes_probabilistic)
+      : undefined;
 
   /* Guiding Principles */
   const fairness_definition = asCsvArray(
@@ -160,47 +165,58 @@ export function mapWizardAnswersToApi(ans: Answers) {
 
   const documentation_consumers = asCsvArray(ans.G28 ?? []);
 
-  /* “Plus” topics */
-  const lineage_doc_present =
-    ans.P29 != null ? !!ans.P29 : undefined; // file/link presence
+  // Oversight / automation-bias triggers
+  const human_oversight_defined =
+    ans.human_oversight_defined != null ? asBool(ans.human_oversight_defined) : undefined;
+  const automation_bias_controls_defined =
+    ans.automation_bias_controls_defined != null
+      ? asBool(ans.automation_bias_controls_defined)
+      : undefined;
 
-  const retention_defined =
-    ans.P30 != null ? asBool(ans.P30) : undefined;
+  /* “Plus” topics */
+  const lineage_doc_present = ans.P29 != null ? !!ans.P29 : undefined;
+
+  const retention_defined = ans.P30 != null ? asBool(ans.P30) : undefined;
 
   const diversity_steps = String(ans.P31 ?? "").trim() || undefined;
 
-  const community_reviews =
-    ans.P32 != null ? asBool(ans.P32) : undefined;
+  const community_reviews = ans.P32 != null ? asBool(ans.P32) : undefined;
 
-  /* Build payload (backend will ignore unknown keys safely) */
+  /* Build payload */
   return {
-    // core (persisted today)
+    // core
     title,
     description,
     data_types,
     model_type,
     deployment_env,
 
-    // privacy (persisted today)
+    // privacy
     processes_personal_data,
     special_category_data,
     privacy_techniques,
+    controller_role,
+    risk_level,
 
-    // explainability / interpretability (persisted today)
+    // explainability / interpretability
     explainability_tooling,
+    explainability_channels,
     interpretability_rating,
 
-    // fairness / accountability / transparency (persisted today)
+    // fairness / accountability / transparency
     fairness_definition,
     accountable_owner,
     model_cards_published,
+    documentation_consumers,
+    outputs_exposed_to_end_users,
+    output_label_includes_probabilistic,
 
-    // ops (persisted today)
+    // ops
     drift_detection,
     retraining_cadence,
     penetration_tested,
 
-    // additional structured context (not all persisted yet, but useful for retrieval & rules)
+    // extras for rules
     sector,
     significant_decision,
     lifecycle_stage,
@@ -212,15 +228,16 @@ export function mapWizardAnswersToApi(ans: Answers) {
     robustness_tests,
     robustness_above_baseline,
     generative_risk_above_baseline,
+    pre_deployment_testing,
+    access_controls_defined,
+    supply_chain_review,
 
     worst_vuln_fix,
     safe_mode,
     mttr_target_hours,
     sustainability_estimate,
 
-    explainability_channels,
     key_features,
-
     credible_harms,
     safety_mitigations,
 
@@ -230,12 +247,15 @@ export function mapWizardAnswersToApi(ans: Answers) {
 
     fairness_stakeholders,
     escalation_route,
-    documentation_consumers,
 
     lineage_doc_present,
     retention_defined,
     diversity_steps,
     community_reviews,
+
+    // oversight / bias controls
+    human_oversight_defined,
+    automation_bias_controls_defined,
   };
 }
 
