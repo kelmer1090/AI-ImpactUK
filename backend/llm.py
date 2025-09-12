@@ -86,7 +86,7 @@ def generate_flags(
             "prompt": prompt,
             "system": system,
             "stream": False,
-            "format": "json",  # ask Ollama to return a JSON string in 'response'
+            "format": "json",  #Ollama to returns a JSON string in 'response'
             "options": {
                 "temperature": temp,
                 "num_predict": OLLAMA_NUM_PREDICT,
@@ -97,7 +97,7 @@ def generate_flags(
         r.raise_for_status()
         raw = r.json().get("response", "")
 
-        # In JSON mode the whole thing is (usually) JSON already
+        # In JSON mode the whole thing is JSON already
         try:
             parsed: Any = json.loads(raw)
         except Exception:
@@ -111,7 +111,7 @@ def generate_flags(
 
     result = _call_once(t)
 
-    # Retry once if empty, slightly higher temp and stronger instruction.
+    # slightly higher temp and stronger instruction
     if retry_on_empty and not result["flags"]:
         retry_system = system + (
             "\nBe decisive. If evidence is partial, emit AMBER with a concise 'because' and a concrete mitigation. "

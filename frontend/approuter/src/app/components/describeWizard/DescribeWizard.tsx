@@ -7,6 +7,7 @@ import questionsData from "./questions.json";
 import SectionCard from "./SectionCard";
 import ProgressBar from "./ProgressBar";
 import { mapWizardAnswersToApi } from "@/app/utils/mapWizardAnswersToApi"; // adjust path if needed
+import { track } from "@/app/utils/telemetry";
 
 type Answer = Record<string, any>;
 
@@ -139,40 +140,55 @@ export default function DescribeWizard() {
 
   // Submit to NEXT route, which calls FastAPI & persists via Prisma
   async function handleSubmit() {
-    setLoading(true);
-    setSubmitError(null);
+  setLoading(true);
+  setSubmitError(null);
 
-    try {
-      // little guard: you can still block if some critical fields are missing
-      // but we already enforced per-step requireds.
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 30_000);
+  const started = performance.now();
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 30_000);
 
-      const res = await fetch("/api/analyse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiPayload),
-        signal: ctrl.signal,
-      });
+  try {
+    // telemetry: submit intent (no free text)
+    track("analyse_submit", {
+      modelType: apiPayload.model_type,
+      processesPersonalData: !!apiPayload.processes_personal_data,
+      hasSpecialCategoryData: !!apiPayload.special_category_data,
+    });
 
-      clearTimeout(timeout);
+    const res = await fetch("/api/analyse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(apiPayload),
+      signal: ctrl.signal,
+    });
 
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        throw new Error(detail || `Analysis failed (${res.status})`);
-      }
-
-      const json = (await res.json()) as { projectId?: number };
-      if (!json?.projectId) throw new Error("No projectId returned from analysis.");
-
-      router.push(`/projects/${json.projectId}`);
-    } catch (err: any) {
-      console.error("submit error", err);
-      setSubmitError("Submission failed: " + (err?.message || "unexpected error"));
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      // safe, tokenised reason
+      track("analyse_error", { action: `http_${res.status}` });
+      const detail = await res.text().catch(() => "");
+      throw new Error(detail || `Analysis failed (${res.status})`);
     }
+
+    const json = (await res.json()) as { projectId?: number };
+    if (!json?.projectId) {
+      track("analyse_error", { action: "no_project_id" });
+      throw new Error("No projectId returned from analysis.");
+    }
+
+    // success
+    track("analyse_success", { projectId: json.projectId, action: "ok" });
+    router.push(`/projects/${json.projectId}`);
+  } catch (err: any) {
+    // distinguish abort vs other errors without free text
+    const isAbort = err?.name === "AbortError";
+    track("analyse_error", { action: isAbort ? "timeout_or_abort" : "exception" });
+    console.error("submit error", err);
+    setSubmitError("Submission failed: " + (err?.message || "unexpected error"));
+  } finally {
+    clearTimeout(timeoutId); // ensure the timer is always cleared
+    setLoading(false);
   }
+}
 
   if (sections.length === 0) {
     return <div className="py-10 text-center">Loading…</div>;

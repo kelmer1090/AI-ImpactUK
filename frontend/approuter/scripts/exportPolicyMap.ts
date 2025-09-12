@@ -1,4 +1,9 @@
 // Run with: pnpm tsx scripts/exportPolicyMap.ts
+//   Reads raw policy maps (DSIT / ICO / ISO) from the frontend.
+//   Normalises entries (ensures IDs, trims text, validates framework).
+//   Merges into one unified policy_corpus.json.
+//   Saves the file in /backend for use by the API.
+
 import { writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";

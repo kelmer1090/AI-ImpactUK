@@ -24,7 +24,7 @@ type Flag = {
     framework?: string;
     phase?: "data" | "model" | "deployment" | string;
     category?: string;
-    dimension?: string; // optional: accuracy/robustness/privacy/etc.
+    dimension?: string; // accuracy/robustness/privacy
   };
 };
 

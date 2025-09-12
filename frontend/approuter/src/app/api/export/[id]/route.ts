@@ -1,3 +1,8 @@
+//  Builds a Markdown report from stored project + latest assessment
+//  Converts Markdown → HTML with inline CSS for print/export
+//  Generates PDF
+//  Returns file stream with correct headers for download
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

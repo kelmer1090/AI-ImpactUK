@@ -1,10 +1,9 @@
 # backend/rules.yaml
-# backend/rules.yaml
 # Notes:
 # - `clause` MUST match an ID in backend/policy_corpus.json (exported from frontend policyMap).
-# - `meta.phase` ∈ {data, model, deployment} for your RAG-by-phase.
+# - `meta.phase` ∈ {data, model, deployment} for RAG-by-phase.
 # - `meta.dimension` ∈ {privacy, fairness, bias, robustness, security, reliability, explainability, transparency, accountability, safety, data-governance}
-# - Triggers map to your intake fields; keep names stable with mapWizardAnswersToApi.ts.
+# - Triggers map to intake fields; keep names stable with mapWizardAnswersToApi.ts.
 
 rules:
 

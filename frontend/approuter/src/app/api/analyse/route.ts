@@ -1,4 +1,10 @@
 // src/app/api/analyse/route.ts
+// Receives POSTed project descriptions from the frontend
+// Calls FastAPI `/analyse` endpoint with structured JSON
+// Ensures an anonymous session cookie (aiimpact_session)
+// Persists project + assessment in Prisma (PostgreSQL/SQLite)
+// Returns merged result + new projectId to frontend
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

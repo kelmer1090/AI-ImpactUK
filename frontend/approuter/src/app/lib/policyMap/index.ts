@@ -20,7 +20,7 @@ export type Dimension =
   | "explainability";
 
 /** Clause shape used in the frontend policy maps.
- *  `phase` and `dimension` are optional here so we stay backward-compatible,
+ *  `phase` and `dimension` here so backward-compatible,
  *  but the exporter will infer them if missing.
  */
 export type PolicyClause = {
@@ -37,7 +37,7 @@ export type PolicyClause = {
 /** A handy alias for a keyed map of policy clauses */
 export type PolicyMap = Record<string, PolicyClause>;
 
-// Merge all frameworks into a single lookup map
+// all frameworks merged into a single lookup map
 export const policyMap: PolicyMap = {
   ...icoAuditPolicyMap,
   ...dsitPolicyMap,

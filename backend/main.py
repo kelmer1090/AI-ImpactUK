@@ -35,7 +35,7 @@ from llm import generate_flags, default_schema_hint  # JSON-mode LLM client
 
 # ────────────────────────────────────────────────────────────────────────────────
 # App & CORS
-# ────────────────────────────────────────────────────────────────────────────────
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 
@@ -53,7 +53,7 @@ USE_LLM = os.getenv("USE_LLM", "true").lower() == "true"
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Load rules.yaml (legacy heuristic flags; optional – kept for continuity)
-# ────────────────────────────────────────────────────────────────────────────────
+
 rules_path = pathlib.Path(__file__).with_name("rules.yaml")
 try:
     _loaded = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
@@ -342,7 +342,7 @@ def evaluate_rule(rule: Dict[str, Any], payload: Dict[str, Any]) -> bool:
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Policy corpus + Retrieval (TF-IDF)
-# ────────────────────────────────────────────────────────────────────────────────
+
 POLICY: List[PolicyClause] = []
 POLICY_VERSION: str = ""  # computed hash of the loaded corpus
 _vectorizer: Optional[TfidfVectorizer] = None
@@ -469,7 +469,7 @@ def retrieve(q: str, top_k: int = 20, frameworks: Optional[List[str]] = None) ->
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Prompt builders (system + user)
-# ────────────────────────────────────────────────────────────────────────────────
+
 SEVERITY_GUIDANCE = """
 Calibrate consistently:
 - "red" = legal/critical gap or high residual risk
@@ -665,7 +665,7 @@ def _synthesise_green_flags(payload: ProjectInput, hits: List[SearchHit]) -> Lis
                 mitigation=None, evidence=str(ps.get("accountable_owner"))
             ))
 
-    # 8) Data quality controls in place (NEW)
+    # 8) Data quality controls in place 
     if ps.get("data_quality_checks") and _has_real_number(ps.get("validation_score")):
         cid = "ISO 42001 AnnexA A.6.2 Data-Quality"
         if has_clause(cid):
@@ -675,7 +675,7 @@ def _synthesise_green_flags(payload: ProjectInput, hits: List[SearchHit]) -> Lis
                 mitigation=None, evidence=f"validation_score={ps.get('validation_score')}; data_quality_checks=True"
             ))
 
-    # 9) Probabilistic labelling & context provided to users (NEW)
+    # 9) Probabilistic labelling & context provided to users 
     if ps.get("outputs_exposed_to_end_users") and ps.get("output_label_includes_probabilistic"):
         cid = "ICO-Audit Inference-Labeling"
         if has_clause(cid):
@@ -689,7 +689,7 @@ def _synthesise_green_flags(payload: ProjectInput, hits: List[SearchHit]) -> Lis
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Metadata enrichment
-# ────────────────────────────────────────────────────────────────────────────────
+
 def _lookup_clause_meta(clause_id: str, hits: List[SearchHit]) -> Optional[Dict[str, Any]]:
     cid = (clause_id or "").strip().lower()
     if cid:
@@ -732,7 +732,7 @@ def _best_hit_for_reason(hits: List[SearchHit], reason: str) -> Optional[Dict[st
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Endpoints
-# ────────────────────────────────────────────────────────────────────────────────
+
 @app.get("/ping")
 def ping():
     return {"msg": "pong"}
@@ -961,12 +961,14 @@ async def telemetry(req: Request):
     # Only allow known meta keys (no free text)
     META_ALLOW = {
         "projectId",                 # number
-        "modelType",                 # short token, e.g. "classification"
+        "modelType",                 # short token,
         "processesPersonalData",     # boolean
         "hasSpecialCategoryData",    # boolean
-        "format",                    # e.g. "pdf" | "md"
-        "action",                    # optional short token
+        "format",                    # "pdf" | "md"
+        "action",                    # short token
+        "durationMs",
     }
+    
     raw_meta = body.get("meta") or {}
     meta = {}
     for k in META_ALLOW:
@@ -977,6 +979,11 @@ async def telemetry(req: Request):
                 meta[k] = v
             elif k == "projectId":
                 meta[k] = as_int(v, 0)
+            elif k == "durationMs":
+                try:
+                    meta[k] = max(0, int(v))
+                except Exception:
+                    meta[k] = 0
             else:
                 s = str(v)[:32]
                 s = "".join(ch for ch in s if ch.isalnum() or ch in "-_:.")
